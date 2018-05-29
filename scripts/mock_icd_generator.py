@@ -670,11 +670,15 @@ CUSTOM_C_INTERCEPTS = {
     return GetInstanceProcAddr(nullptr, pName);
 ''',
 'vkGetPhysicalDeviceMemoryProperties': '''
-    pMemoryProperties->memoryTypeCount = 2;
+    pMemoryProperties->memoryTypeCount = 4;
     pMemoryProperties->memoryTypes[0].propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     pMemoryProperties->memoryTypes[0].heapIndex = 0;
-    pMemoryProperties->memoryTypes[1].propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    pMemoryProperties->memoryTypes[1].heapIndex = 1;
+    pMemoryProperties->memoryTypes[1].propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    pMemoryProperties->memoryTypes[1].heapIndex = 0;
+    pMemoryProperties->memoryTypes[2].propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    pMemoryProperties->memoryTypes[2].heapIndex = 1;
+    pMemoryProperties->memoryTypes[3].propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    pMemoryProperties->memoryTypes[3].heapIndex = 1;
     pMemoryProperties->memoryHeapCount = 2;
     pMemoryProperties->memoryHeaps[0].flags = 0;
     pMemoryProperties->memoryHeaps[0].size = 8000000000;
@@ -686,13 +690,23 @@ CUSTOM_C_INTERCEPTS = {
 ''',
 'vkGetPhysicalDeviceQueueFamilyProperties': '''
     if (!pQueueFamilyProperties) {
-        *pQueueFamilyPropertyCount = 1;
+        *pQueueFamilyPropertyCount = 3;
     } else {
         if (*pQueueFamilyPropertyCount) {
             pQueueFamilyProperties[0].queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT;
-            pQueueFamilyProperties[0].queueCount = 1;
+            pQueueFamilyProperties[0].queueCount = 16;
             pQueueFamilyProperties[0].timestampValidBits = 0;
             pQueueFamilyProperties[0].minImageTransferGranularity = {1,1,1};
+
+            pQueueFamilyProperties[1].queueFlags = VK_QUEUE_GRAPHICS_BIT;
+            pQueueFamilyProperties[1].queueCount = 16;
+            pQueueFamilyProperties[1].timestampValidBits = 0;
+            pQueueFamilyProperties[1].minImageTransferGranularity = {1,1,1};
+
+            pQueueFamilyProperties[2].queueFlags = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
+            pQueueFamilyProperties[2].queueCount = 16;
+            pQueueFamilyProperties[2].timestampValidBits = 0;
+            pQueueFamilyProperties[2].minImageTransferGranularity = {16,16,16};
         }
     }
 ''',
@@ -739,18 +753,12 @@ CUSTOM_C_INTERCEPTS = {
     GetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
 ''',
 'vkGetPhysicalDeviceImageFormatProperties': '''
-    // A hardcoded unsupported format
-    if (format == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32) {
-        return VK_ERROR_FORMAT_NOT_SUPPORTED;
-    }
-
     // TODO: Just hard-coding some values for now
     // TODO: If tiling is linear, limit the mips, levels, & sample count
     if (VK_IMAGE_TILING_LINEAR == tiling) {
         *pImageFormatProperties = { { 4096, 4096, 256 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, 4294967296 };
     } else {
-        // We hard-code support for all sample counts except 64 bits.
-        *pImageFormatProperties = { { 4096, 4096, 256 }, 12, 256, 0x7F & ~VK_SAMPLE_COUNT_64_BIT, 4294967296 };
+        *pImageFormatProperties = { { 4096, 4096, 256 }, 12, 256, 0x7F, 4294967296 };
     }
     return VK_SUCCESS;
 ''',
@@ -849,7 +857,7 @@ CUSTOM_C_INTERCEPTS = {
     pMemoryRequirements->alignment = 1;
 
     // Here we hard-code that the memory type at index 3 doesn't support this image.
-    pMemoryRequirements->memoryTypeBits = 0xFFFF & ~(0x1 << 3);
+    pMemoryRequirements->memoryTypeBits = 0xFFFF;
 ''',
 'vkGetImageMemoryRequirements2KHR': '''
     GetImageMemoryRequirements(device, pInfo->image, &pMemoryRequirements->memoryRequirements);
