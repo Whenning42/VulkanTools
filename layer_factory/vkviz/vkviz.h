@@ -24,9 +24,67 @@
 #include "vulkan/vulkan.h"
 #include "layer_factory.h"
 
+/* CodeGen? */
+class VkVizImageView {
+    // Subset of VkImageViewCreateInfo members
+    VkImage image;
+    VkImageSubresourceRange subresourceRange;
+}
+
+
+class VkVizAttachment {
+    VkVizImageView image_view;
+
+ public:
+    VkVizImageView& ImageView() {return image_view};
+}
+
+
+class VkVizSubPass {
+    std::vector<VkVizAttachment> color_attachments;
+
+    bool has_depth_attachment;
+    VkVizAttachment depth_attachment;
+
+    bool has_stencil_attachment;
+    VkVizAttachment stencil_attachment;
+
+ public:
+    std::vector<VkVizAttachment>& ColorAttachments() {return color_attachments;}
+
+    bool  HasDepthAttachment() {return has_depth_attachment;}
+    VkVizAttachment& DepthAttachment() {return depth_attachment;}
+
+    bool HasStencilAttachment() {return has_stencil_attachment;}
+    VkVizAttachment& StencilAttachment() {return stencil_attachment;}
+}
+
+
+class VkVizRenderPass {
+    VkRenderPass render_pass;
+    VkVizFramebuffer framebuffer;
+    std::vector<VkVizSubPass> sub_passes;
+    int32_t current_subpass_index = 0;
+
+ public:
+    VkVizRenderPass(VkRenderPass render_pass, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents): render_pass(render_pass), framebuffer(framebuffer) {};
+
+    void NextSubPass(VkSubpassContents) { ++current_subpass_index; }
+
+    void EndRenderPass() {current_subpass_index = -1;}
+
+    VkVizSubPass& SubPass() { return sub_passes[current_subpass_index]; }
+}
+
+class VkVizCommandBuffer {
+    std::vector<VkVizRenderPass> render_passes;
+    std::vector<CMD_TYPE> commands;
+}
+/* CodeGen? */
+
 // vkCmd tracking -- complete as of header 1.0.68
 // please keep in "none, then sorted" order
-// Note: grepping vulkan.h for VKAPI_CALL.*vkCmd will return all functions except vkEndCommandBuffer
+// Note: grepping vulkan.h for VKAPI_CALL.*vkCmd will return all functions except vkEndCommandBuffer, vkBeginBuffer, and vkResetBuffer
 
 enum CMD_TYPE {
     CMD_NONE,
@@ -109,6 +167,7 @@ class VkViz : public layer_factory {
 
     VkResult PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo);
     VkResult PostCallEndCommandBuffer(VkCommandBuffer commandBuffer);
+    VkResult PostCallResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
     void PostCallCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo);
     void PostCallCmdBeginQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags);
     void PostCallCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin,
@@ -226,8 +285,11 @@ class VkViz : public layer_factory {
     VkResult PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 
    private:
+    void AddCommand(VkCommandBuffer cmd_buffer, CMD_TYPE type);
+
     //
     std::unordered_map<VkCommandBuffer, std::vector<CMD_TYPE>> cmdbuffer_map_;
+    std::unordered_map<VkCommandBuffer, bool> cmdbuffer_was_printed_;
     std::ofstream outfile_;
     uint32_t outfile_num_;
     std::string outfile_base_name_;
