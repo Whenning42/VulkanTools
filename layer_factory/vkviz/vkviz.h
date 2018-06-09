@@ -21,153 +21,44 @@
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
+
 #include "vulkan/vulkan.h"
 #include "layer_factory.h"
-
-/* CodeGen? */
-class VkVizImageView {
-    // Subset of VkImageViewCreateInfo members
-    VkImage image;
-    VkImageSubresourceRange subresourceRange;
-}
-
-
-class VkVizAttachment {
-    VkVizImageView image_view;
-
- public:
-    VkVizImageView& ImageView() {return image_view};
-}
-
-
-class VkVizSubPass {
-    std::vector<VkVizAttachment> color_attachments;
-
-    bool has_depth_attachment;
-    VkVizAttachment depth_attachment;
-
-    bool has_stencil_attachment;
-    VkVizAttachment stencil_attachment;
-
- public:
-    std::vector<VkVizAttachment>& ColorAttachments() {return color_attachments;}
-
-    bool  HasDepthAttachment() {return has_depth_attachment;}
-    VkVizAttachment& DepthAttachment() {return depth_attachment;}
-
-    bool HasStencilAttachment() {return has_stencil_attachment;}
-    VkVizAttachment& StencilAttachment() {return stencil_attachment;}
-}
-
-
-class VkVizRenderPass {
-    VkRenderPass render_pass;
-    VkVizFramebuffer framebuffer;
-    std::vector<VkVizSubPass> sub_passes;
-    int32_t current_subpass_index = 0;
-
- public:
-    VkVizRenderPass(VkRenderPass render_pass, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents): render_pass(render_pass), framebuffer(framebuffer) {};
-
-    void NextSubPass(VkSubpassContents) { ++current_subpass_index; }
-
-    void EndRenderPass() {current_subpass_index = -1;}
-
-    VkVizSubPass& SubPass() { return sub_passes[current_subpass_index]; }
-}
-
-class VkVizCommandBuffer {
-    std::vector<VkVizRenderPass> render_passes;
-    std::vector<CMD_TYPE> commands;
-}
-/* CodeGen? */
+#include "render_pass.h"
+#include "command_buffer.h"
 
 // vkCmd tracking -- complete as of header 1.0.68
 // please keep in "none, then sorted" order
 // Note: grepping vulkan.h for VKAPI_CALL.*vkCmd will return all functions except vkEndCommandBuffer, vkBeginBuffer, and vkResetBuffer
-
-enum CMD_TYPE {
-    CMD_NONE,
-    CMD_BEGINCOMMANDBUFFER,  // Should be the first command
-    CMD_BEGINDEBUGUTILSLABELEXT,
-    CMD_BEGINQUERY,
-    CMD_BEGINRENDERPASS,
-    CMD_BINDDESCRIPTORSETS,
-    CMD_BINDINDEXBUFFER,
-    CMD_BINDPIPELINE,
-    CMD_BINDVERTEXBUFFERS,
-    CMD_BLITIMAGE,
-    CMD_CLEARATTACHMENTS,
-    CMD_CLEARCOLORIMAGE,
-    CMD_CLEARDEPTHSTENCILIMAGE,
-    CMD_COPYBUFFER,
-    CMD_COPYBUFFERTOIMAGE,
-    CMD_COPYIMAGE,
-    CMD_COPYIMAGETOBUFFER,
-    CMD_COPYQUERYPOOLRESULTS,
-    CMD_DEBUGMARKERBEGINEXT,
-    CMD_DEBUGMARKERENDEXT,
-    CMD_DEBUGMARKERINSERTEXT,
-    CMD_DISPATCH,
-    CMD_DISPATCHBASE,
-    CMD_DISPATCHBASEKHR,
-    CMD_DISPATCHINDIRECT,
-    CMD_DRAW,
-    CMD_DRAWINDEXED,
-    CMD_DRAWINDEXEDINDIRECT,
-    CMD_DRAWINDEXEDINDIRECTCOUNTAMD,
-    CMD_DRAWINDIRECT,
-    CMD_DRAWINDIRECTCOUNTAMD,
-    CMD_ENDCOMMANDBUFFER,  // Should be the last command in any RECORDED cmd buffer
-    CMD_ENDDEBUGUTILSLABELEXT,
-    CMD_ENDQUERY,
-    CMD_ENDRENDERPASS,
-    CMD_EXECUTECOMMANDS,
-    CMD_FILLBUFFER,
-    CMD_INSERTDEBUGUTILSLABELEXT,
-    CMD_NEXTSUBPASS,
-    CMD_PIPELINEBARRIER,
-    CMD_PROCESSCOMMANDSNVX,
-    CMD_PUSHCONSTANTS,
-    CMD_PUSHDESCRIPTORSETKHR,
-    CMD_PUSHDESCRIPTORSETWITHTEMPLATEKHR,
-    CMD_RESERVESPACEFORCOMMANDSNVX,
-    CMD_RESETCOMMANDBUFFER,
-    CMD_RESETEVENT,
-    CMD_RESETQUERYPOOL,
-    CMD_RESOLVEIMAGE,
-    CMD_SETBLENDCONSTANTS,
-    CMD_SETDEPTHBIAS,
-    CMD_SETDEPTHBOUNDS,
-    CMD_SETDEVICEMASK,
-    CMD_SETDEVICEMASKKHR,
-    CMD_SETDISCARDRECTANGLEEXT,
-    CMD_SETEVENT,
-    CMD_SETLINEWIDTH,
-    CMD_SETSAMPLELOCATIONSEXT,
-    CMD_SETSCISSOR,
-    CMD_SETSTENCILCOMPAREMASK,
-    CMD_SETSTENCILREFERENCE,
-    CMD_SETSTENCILWRITEMASK,
-    CMD_SETVIEWPORT,
-    CMD_SETVIEWPORTWSCALINGNV,
-    CMD_UPDATEBUFFER,
-    CMD_WAITEVENTS,
-    CMD_WRITEBUFFERMARKERAMD,
-    CMD_WRITETIMESTAMP,
-};
 
 class VkViz : public layer_factory {
    public:
     // Constructor for interceptor
     VkViz() : layer_factory(this), outfile_num_(0), outfile_base_name_("vkviz_out"){};
 
-    // This function will be called for every API call
-    // void PreCallApiFunction(const char *api_name);
+    // These functions are all implemented in vkviz.cpp.
 
     VkResult PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo);
     VkResult PostCallEndCommandBuffer(VkCommandBuffer commandBuffer);
     VkResult PostCallResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
+
+    // Need to intercept this call to determine which command buffers are primary or secondary ones. Also creates
+    // VkVizCommandBuffers.
+    VkResult PostCallAllocateCommandBuffers(VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer*);
+    // Destroys corresponding VkVizCommandBuffers.
+    void PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uin32_t commandBufferCount,
+                                    const VkCommandBuffer* pCommandBuffers);
+
+    // Creates a VkVizRenderPass object.
+    VkResult PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,
+                                      const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
+    void PostCallDestroyRenderPass(VkDevice deice, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator);
+
+    // Processes the submitted command buffers and updates any necessary output info.
+    VkResult PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
+
+    // These functions are implemented in vkviz_command_intercepts.cpp and just call the corresponding function on the
+    // VkCommandBuffers corresponding VkVizCommandBuffer object.
     void PostCallCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo);
     void PostCallCmdBeginQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags);
     void PostCallCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin,
@@ -282,14 +173,44 @@ class VkViz : public layer_factory {
                                          VkDeviceSize dstOffset, uint32_t marker);
     void PostCallCmdWriteTimestamp(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool,
                                    uint32_t query);
-    VkResult PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 
    private:
-    void AddCommand(VkCommandBuffer cmd_buffer, CMD_TYPE type);
+    void AddRenderPass(const VkRenderPass* pRenderPass, const VkRenderPassCreateInfo* pCreateInfo) {
+        render_pass_map_[*pRenderPass] = VkVizRenderPass(*pRenderPass, pCreateInfo);
+    }
 
-    //
-    std::unordered_map<VkCommandBuffer, std::vector<CMD_TYPE>> cmdbuffer_map_;
-    std::unordered_map<VkCommandBuffer, bool> cmdbuffer_was_printed_;
+    void RemoveRenderPass(VkRenderPass render_pass) {
+        assert(render_pass_map_.find(render_pass) != render_pass_map.end());
+        render_pass_map_.erase(render_pass);
+    }
+
+    VkVizRenderPass& GetRenderPass(VkRenderPass render_pass) {
+        assert(render_pass_indices_map.find(render_pass) != render_pass_indices_map.end());
+        return *render_pass_map_[render_pass]
+    }
+
+    void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkComandBuffer* pCommandBuffers) {
+        for (int i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
+            command_buffer_map[pCommandBuffers[i]] = VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level);
+        }
+    }
+
+    void RemoveCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) {
+        for (int i = 0; i < commandBufferCount; ++i) {
+            VkCommandBuffer& command_buffer = pCommandBuffers[i];
+            assert(command_buffer_map_.find(command_buffer) != command_buffer_map.find());
+            command_buffer_map.erase(command_buffer);
+        }
+    }
+
+    VkVizCommandBuffer& GetCommandBuffer(VkCommandBuffer command_buffer) {
+        assert(command_buffer_indices_map.find(command_buffer) != command_buffer_indices_map.end());
+        return *command_buffer_map_[command_buffer];
+    }
+
+    std::unordered_map<VkCommandBuffer, VkVizCommandBuffer> command_buffer_map_;
+    std::unordered_map<VkRenderPass, VkVizRenderPass> render_pass_map_;
+
     std::ofstream outfile_;
     uint32_t outfile_num_;
     std::string outfile_base_name_;
