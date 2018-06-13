@@ -46,7 +46,7 @@ class VkViz : public layer_factory {
     // VkVizCommandBuffers.
     VkResult PostCallAllocateCommandBuffers(VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer*);
     // Destroys corresponding VkVizCommandBuffers.
-    void PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uin32_t commandBufferCount,
+    void PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
                                     const VkCommandBuffer* pCommandBuffers);
 
     // Creates a VkVizRenderPass object.
@@ -189,9 +189,9 @@ class VkViz : public layer_factory {
         return *render_pass_map_[render_pass]
     }
 
-    void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkComandBuffer* pCommandBuffers) {
+    void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers) {
         for (int i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
-            command_buffer_map[pCommandBuffers[i]] = VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level);
+            command_buffer_map_[pCommandBuffers[i]] = VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level);
         }
     }
 

@@ -1,16 +1,220 @@
+#include "commands.h"
+
+#include <algorithm>
+
+
 /* CodeGen? */
 class VkVizImageView {
     // Subset of VkImageViewCreateInfo members
     VkImage image;
     VkImageSubresourceRange subresourceRange;
+
+ public:
+    VkImage Image() {return image;}
+};
+
+
+// TODO clean this up
+enum MEMORY_TYPE { IMAGE_MEMORY, BUFFER_MEMORY };
+
+enum READ_WRITE { READ, WRITE };
+
+VkExtent3D extentFromOffsets(VkOffset3D first, VkOffset3D second) {
+    return {(uint32_t)std::abs((int64_t)first.x - second.x), (uint32_t)std::abs((int64_t)first.y - second.y),
+            (uint32_t)std::abs((int64_t)first.z - second.z)};
+}
+
+VkOffset3D cornerFromOffsets(VkOffset3D first, VkOffset3D second) {
+    return {std::min(first.x, second.x), std::min(first.y, second.y), std::min(first.z, second.z)};
+}
+
+
+VkImageSubresourceRange RangeFromLayers(VkImageSubresourceLayers layers) {
+    VkImageSubresourceRange range;
+    range.aspectMask = layers.aspectMask;
+    range.baseMipLevel = layers.mipLevel;
+    range.levelCount = 1;
+    range.baseArrayLayer = layers.baseArrayLayer;
+    range.layerCount = layers.layerCount;
+    return range;
+}
+
+struct ImageRegion {
+    VkImageSubresourceRange subresource;
+    VkOffset3D offset;
+    VkExtent3D extent;
+    bool entire_image = false;
+
+    ImageRegion(READ_WRITE rw, const VkImageBlit& blit) {
+        if (rw == READ) {
+            subresource = RangeFromLayers(blit.srcSubresource);
+            offset = cornerFromOffsets(blit.srcOffsets[0], blit.srcOffsets[1]);
+            extent = extentFromOffsets(blit.srcOffsets[0], blit.srcOffsets[1]);
+        } else {
+            subresource = RangeFromLayers(blit.dstSubresource);
+            offset = cornerFromOffsets(blit.dstOffsets[0], blit.dstOffsets[1]);
+            extent = extentFromOffsets(blit.dstOffsets[0], blit.dstOffsets[1]);
+        }
+    }
+
+    ImageRegion(READ_WRITE rw, const VkImageCopy& copy) {
+        if (rw == READ) {
+            subresource = RangeFromLayers(copy.srcSubresource);
+            offset = copy.srcOffset;
+            extent = copy.extent;
+        } else {
+            subresource = RangeFromLayers(copy.dstSubresource);
+            offset = copy.dstOffset;
+            extent = copy.extent;
+        }
+    }
+
+    ImageRegion(READ_WRITE rw, const VkBufferImageCopy& copy) {
+        subresource = RangeFromLayers(copy.imageSubresource);
+        offset = copy.imageOffset;
+        extent = copy.imageExtent;
+    }
+
+    ImageRegion(READ_WRITE rw, const VkImageSubresourceRange& subresource_range) {
+        subresource = subresource_range;
+        entire_image = true;
+    }
+};
+
+struct ImageAccess {
+    VkImage image;
+    std::vector<ImageRegion> regions;
+};
+
+struct BufferRegion {
+    VkDeviceSize offset;
+    VkDeviceSize size = 0;
+    uint32_t row_length = 0;
+    uint32_t image_height = 0;
+
+    BufferRegion(READ_WRITE rw, const VkBufferCopy& copy) {
+        if (rw == READ) {
+            offset = copy.srcOffset;
+        } else {
+            offset = copy.dstOffset;
+        }
+        size = copy.size;
+    }
+
+    BufferRegion(READ_WRITE rw, const VkBufferImageCopy& copy) {
+        offset = copy.bufferOffset;
+        row_length = copy.bufferRowLength;
+        image_height= copy.bufferImageHeight;
+    }
+};
+
+struct BufferAccess {
+    VkBuffer buffer;
+    std::vector<BufferRegion> regions;
+};
+
+struct MemoryAccess {
+    bool is_read;
+    MEMORY_TYPE type;
+    void* data;
+
+    template <typename T>
+    static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions) {
+        MemoryAccess access;
+        access.type = IMAGE_MEMORY;
+        access.is_read = rw;
+
+        std::vector<ImageRegion> regions;
+        std::transform(pRegions, pRegions + regionCount, std::back_inserter(regions),
+                       [rw](const T& region) { return ImageRegion(rw, region); });
+
+        access.data = new ImageAccess({image, regions});
+        return access;
+    }
+
+    template <typename T>
+    static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
+        MemoryAccess access;
+        access.type = BUFFER_MEMORY;
+        access.is_read = rw;
+
+        std::vector<BufferRegion> regions;
+        std::transform(pRegions, pRegions + regionCount, std::back_inserter(regions),
+                       [rw](const T& region) { return BufferRegion(rw, region);});
+
+        access.data = new BufferAccess({buffer, regions});
+        return access;
+    }
+
+    template <typename T>
+    static MemoryAccess ImageView(READ_WRITE rw, VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
+        std::vector<ImageRegion> regions = ImageRegion(image_view, regionCount, pRegions);
+        return Image(rw, image_view.Image(), regions.size(), regions.data());
+    }
+};
+
+void AddAccess(VkCommandBuffer cmdBuffer, MemoryAccess access, CMD_TYPE type) {
+    printf("Memory access in cmd buffer: %d.\n", cmdBuffer);
+    printf("For command: %s.\n", cmdToString(type).c_str());
+    switch (access.is_read) {
+        case READ:
+            printf("Was a read.\n");
+        case WRITE:
+            printf("Was a write.\n");
+    }
+
+    switch (access.type) {
+       case IMAGE_MEMORY: {
+            ImageAccess data = *(ImageAccess*)access.data;
+            printf("Of image: %d.\n", data.image);
+       }
+       case BUFFER_MEMORY: {
+            BufferAccess data = *(BufferAccess*)access.data;
+            printf("Of buffer: %d.\n", data.buffer);
+       }
+    }
+    return;
+}
+
+template <typename T>
+MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {
+    return MemoryAccess::Image(READ, image, regionCount, pRegions);
+}
+
+template <typename T>
+MemoryAccess ImageWrite(VkImage image, uint32_t regionCount, const T* pRegions) {
+    return MemoryAccess::Image(WRITE, image, regionCount, pRegions);
+}
+
+// Generates corresponding ImageRead()
+template <typename T>
+MemoryAccess ImageViewRead(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
+    assert(0);
+    //return MemoryAccess::ImageView(READ, image_view, regionCount, pRegions);
+}
+
+// Generates corresponding ImageWrite()
+template <typename T>
+MemoryAccess ImageViewWrite(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
+    return MemoryAccess::ImageView(WRITE, image_view, regionCount, pRegions);
+}
+
+template <typename T>
+MemoryAccess BufferRead(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
+    return MemoryAccess::Buffer(READ, buffer, regionCount, pRegions);
+}
+
+template <typename T>
+MemoryAccess BufferWrite(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
+    return MemoryAccess::Buffer(WRITE, buffer, regionCount, pRegions);
 }
 
 class VkVizAttachment {
     VkVizImageView image_view;
 
    public:
-    VkVizImageView& ImageView(){return image_view};
-}
+    VkVizImageView& ImageView(){return image_view;}
+};
 
 class VkVizSubPass {
     std::vector<VkVizAttachment> color_attachments;
@@ -29,62 +233,72 @@ class VkVizSubPass {
 
     bool HasStencilAttachment() { return has_stencil_attachment; }
     VkVizAttachment& StencilAttachment() { return stencil_attachment; }
-}
+};
 
 class VkVizRenderPass {
     VkRenderPass render_pass;
     std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkSubpassDescription> sub_passes;
+    std::vector<VkSubpassDescription> subpasses;
     std::vector<VkSubpassDependency> dependencies;
+    static std::unordered_map<VkRenderPass, VkVizRenderPass*> render_passes_;
 
    public:
-    VkVizRenderPass(VkRenderPass render_pass, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents) {
-        for (int i = 0; i < pRenderPassBegin->attachmentCount; ++i) {
-            attatchments.push_back(pRenderPassBegin->pAttachments[i]);
+    static VkVizRenderPass& Get(VkRenderPass render_pass) { return *render_passes_[render_pass];};
+
+    VkVizRenderPass(VkDevice device, VkRenderPassCreateInfo* pRenderPassCreateInfo, VkRenderPass* pRenderPass) {
+        for (int i = 0; i < pRenderPassCreateInfo->attachmentCount; ++i) {
+            attachments.push_back(pRenderPassCreateInfo->pAttachments[i]);
         }
-        for (int i = 0; i < pRenderPassBegin->subpassCount; ++i) {
-            subpasses.push_back(pRenderPassBegin->pSubpasses[i]);
+        for (int i = 0; i < pRenderPassCreateInfo->subpassCount; ++i) {
+            subpasses.push_back(pRenderPassCreateInfo->pSubpasses[i]);
         }
-        for (int i = 0; i < pRenderPassBegin->dependencyCount; ++i) {
-            dependencies.push_back(pRenderPassBegin->pDependencies[i]);
+        for (int i = 0; i < pRenderPassCreateInfo->dependencyCount; ++i) {
+            dependencies.push_back(pRenderPassCreateInfo->pDependencies[i]);
         }
+
+        render_passes_[*pRenderPass] = this;
     }
-}
+
+    VkSubpassDescription Subpass(size_t index) const {return subpasses[index];}
+};
+
+class VkVizFramebuffer {};
 
 class VkVizRenderPassInstance {
-    const& VkVizRenderPass render_pass;
+    const VkVizRenderPass& render_pass;
+    int current_subpass_index = 0;
     VkVizFramebuffer& framebuffer;
 
    public:
-    VkVizRenderPass(VkRenderPass render_pass, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents)
-        : render_pass(render_pass), framebuffer(framebuffer){};
+    VkVizRenderPassInstance(VkRenderPass render_pass, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents)
+        : render_pass(VkVizRenderPass::Get(render_pass)), framebuffer(framebuffer){};
 
-    void NextSubPass(VkSubpassContents) { ++current_subpass_index; }
+    void NextSubpass(VkSubpassContents) { ++current_subpass_index; }
 
     void EndRenderPass() { current_subpass_index = -1; }
 
-    VkVizSubPass& SubPass() { return sub_passes[current_subpass_index]; }
-}
+    VkSubpassDescription CurrentSubpass() { return render_pass.Subpass(current_subpass_index); }
+};
 
 class Command {
-    CMD_TYPE type_ = CMD_UNKNOWN;
+    CMD_TYPE type_ = CMD_NONE;
     std::vector<MemoryAccess> accesses_;
 
    public:
     Command(CMD_TYPE type) : type_(type){};
     Command(CMD_TYPE type, MemoryAccess access) : type_(type), accesses_({access}){};
     Command(CMD_TYPE type, std::vector<MemoryAccess> accesses) : type_(type), accesses_(accesses){};
-}
+};
 
 class VkVizCommandBuffer {
-    std::vector<CMD_TYPE> commands_;
+    std::vector<Command> commands_;
 
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    AddCommand(CMD_TYPE type) { commands_.push_back(Command(type)); };
-    AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(Command(type, access)); };
-    AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) { commands_.push_back(Command(type, accesses)); };
+    void AddCommand(CMD_TYPE type) { commands_.push_back(Command(type)); };
+    void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(Command(type, access)); };
+    void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) { commands_.push_back(Command(type, accesses)); };
 
    public:
     // These three functions aren't of the form vkCmd*.
@@ -184,5 +398,5 @@ class VkVizCommandBuffer {
     void WriteBufferMarkerAMD(VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker);
     void WriteTimestamp(VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query);
     VkResult QueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
-}
+};
 /* CodeGen? */
