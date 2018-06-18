@@ -47,39 +47,41 @@ void VkVizCommandBuffer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindi
 
 void VkVizCommandBuffer::BlitImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,
                                    uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) {
-    AddCommand(CMD_BLITIMAGE, {ImageRead(srcImage, regionCount, pRegions, CMD_BLITIMAGE),
-                               ImageWrite(dstImage, regionCount, pRegions, CMD_BLITIMAGE)});
+    AddCommand(CMD_BLITIMAGE, {ImageRead(srcImage, regionCount, pRegions),
+                               ImageWrite(dstImage, regionCount, pRegions)});
 }
 
 std::vector<MemoryAccess> ClearAttachments(VkVizSubPass sub_pass, uint32_t attachment_count, const VkClearAttachment* p_attachments,
                                            uint32_t rect_count, const VkClearRect* p_rects) {
     std::vector<MemoryAccess> accesses;
 
+    /*
     for (uint32_t i = 0; i < attachment_count; ++i) {
         const VkClearAttachment& clear = p_attachments[i];
 
         if (clear.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT && clear.colorAttachment != VK_ATTACHMENT_UNUSED) {
-            ImageView& cleared_view = sub_pass.ColorAttachments()[clear.colorAttachment].ImageView();
+            VkVizImageView& cleared_view = sub_pass.ColorAttachments()[clear.colorAttachment].ImageView();
             accesses.push_back(ImageViewWrite(cleared_view, rect_count, p_rects));
         }
 
         if (clear.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT && sub_pass.HasDepthAttachment()) {
-            ImageView& cleared_view = sub_pass.DepthAttachment().ImageView();
+            VkVizImageView& cleared_view = sub_pass.DepthAttachment().ImageView();
             accesses.push_back(ImageViewWrite(cleared_view, rect_count, p_rects));
         }
 
         if (clear.aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT && sub_pass.HasStencilAttachment()) {
-            ImageView& cleared_view = sub_pass.StencilAttachment().ImageView();
+            VkVizImageView& cleared_view = sub_pass.StencilAttachment().ImageView();
             accesses.push_back(ImageViewWrite(cleared_view, rect_count, p_rects));
         }
-    }
+    }*/
 
     return accesses;
 }
 
 void VkVizCommandBuffer::ClearAttachments(uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount,
                                           const VkClearRect* pRects) {
-    AddCommand(CMD_CLEARATTACHMENTS, AttachmentsClear(CurrentSubpass(), attachmentCount, pAttchments, rectCount, pRects));
+    //AddCommand(CMD_CLEARATTACHMENTS, AttachmentsClear(CurrentSubpass(), attachmentCount, pAttachments, rectCount, pRects));
+    AddCommand(CMD_CLEARATTACHMENTS);
 }
 
 void VkVizCommandBuffer::ClearColorImage(VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor,
@@ -109,7 +111,7 @@ void VkVizCommandBuffer::CopyImage(VkImage srcImage, VkImageLayout srcImageLayou
 
 void VkVizCommandBuffer::CopyImageToBuffer(VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount,
                                            const VkBufferImageCopy* pRegions) {
-    AddCommand(CMD_COPYIMAGETOBUFFER), {ImageRead(srcImage, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)};
+    AddCommand(CMD_COPYIMAGETOBUFFER, {ImageRead(srcImage, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)});
 }
 
 void VkVizCommandBuffer::CopyQueryPoolResults(VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,
@@ -129,7 +131,7 @@ void VkVizCommandBuffer::DebugMarkerBeginEXT(const VkDebugMarkerMarkerInfoEXT* p
     // Implement later?
 }
 
-void VkVizCommandBuffer::DebugMarkerEndEXT(VkCommandBuffer commandBuffer) {
+void VkVizCommandBuffer::DebugMarkerEndEXT() {
     AddCommand(CMD_DEBUGMARKERENDEXT);
     // TODO(whenning): Not sure what the synchronization details are
     // Implement later?
@@ -167,41 +169,54 @@ void VkVizCommandBuffer::DispatchIndirect(VkBuffer buffer, VkDeviceSize offset) 
 std::vector<MemoryAccess> DrawAccesses() {
     std::vector<MemoryAccess> accesses;
 
+    /*
     // Add shader output writes presumably to entire render target
     // Add descriptor reads and writes for all stages and regions possible, possibly anotate as possible reads/writes
     std::vector<MemoryAccess> output_writes = OutputAttachmentWrites(pipeline?);
     std::vector<MemoryAccess> descriptor_accesses = PossibleDescriptorAccesses(pipeline?);
     accesses.insert(accesses.end(), output_writes.begin(), output_writes.end());
     accesses.insert(accesses.end(), descritpro_accesses.begin(), descriptor_accesses.end());
+    */
     return accesses;
 }
 
-std::vector<MemoryAccess> Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
+std::vector<MemoryAccess> DrawAccess(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
     std::vector<MemoryAccess> accesses;
 
+    /*
     MemoryAccess buffer_read = VertexBufferRead(pipeline?);
     return buffer_read + DrawAccesses();
+    */
+    return accesses;
 }
 
 std::vector<MemoryAccess> DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
                                       uint32_t firstInstance) {
     std::vector<MemoryAccess> accesses;
 
+    /*
     MemoryAccess vertex_buffer_read = VertexBufferRead(pipeline?);
     MemoryAccess index_buffer_read = IndexBufferRead(pipleine?);
     return buffer_read + DrawAccesses();
+    */
+    return accesses;
 }
 
 std::vector<MemoryAccess> DrawIndexedIndirect() {
+    std::vector<MemoryAccess> accesses;
+
+    /*
     acccesses;
 
     MemAccess vertex_buffer = vbread(pipeline);
     MemAccess index_buffer = ibread(pipeline);
     return vertex_buffer + index_buffer + DrawAccess();
+    */
+    return accesses;
 }
 
 void VkVizCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-    AddCommand(CMD_DRAW, Draw(vertexCount, instanceCount, firstVertex, firstInstance));
+    AddCommand(CMD_DRAW, DrawAccess(vertexCount, instanceCount, firstVertex, firstInstance));
 
     // Graphics pipeline synchronization
 }
@@ -221,7 +236,7 @@ void VkVizCommandBuffer::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offse
 
 void VkVizCommandBuffer::DrawIndexedIndirectCountAMD(VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer,
                                                      VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) {
-    AddCommand(CMD_DRAWINDEXEDINDIRECTCOUNTAMD, DrawIndexedIndirectCount);
+    AddCommand(CMD_DRAWINDEXEDINDIRECTCOUNTAMD);
     // Graphics pipeline synchronization
     // Read buffer
 }
@@ -240,7 +255,7 @@ void VkVizCommandBuffer::DrawIndirectCountAMD(VkBuffer buffer, VkDeviceSize offs
     // Read countBuffer
 }
 
-void VkVizCommandBuffer::EndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer) {
+void VkVizCommandBuffer::EndDebugUtilsLabelEXT() {
     AddCommand(CMD_ENDDEBUGUTILSLABELEXT);
     // TODO(whenning): unsure
 }
@@ -250,11 +265,11 @@ void VkVizCommandBuffer::EndQuery(VkQueryPool queryPool, uint32_t query) {
     // TODO(whenning): unsure
 }
 
-void VkVizCommandBuffer::EndRenderPass(VkCommandBuffer commandBuffer) {
+void VkVizCommandBuffer::EndRenderPass() {
     AddCommand(CMD_ENDRENDERPASS);
 
     // Mark that we are no longer in a renderpass
-    current_render_pass = -1;
+    current_render_pass_ = -1;
 
     // Generate intermediate access info?
 }
@@ -266,13 +281,11 @@ void VkVizCommandBuffer::ExecuteCommands(uint32_t commandBufferCount, const VkCo
 }
 
 void VkVizCommandBuffer::FillBuffer(VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data) {
-    AddCommand(CMD_FILLBUFFER);
-
-    BufferWrite(dstBuffer, dstOffset, size, CMD_FILLBUFFER);
+    AddCommand(CMD_FILLBUFFER, BufferWrite(dstBuffer, dstOffset, size));
 }
 
 void VkVizCommandBuffer::InsertDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo) {
-    AddCommand(CMD_INSERTDEBUGUTILSLABELEXT, InsertLabel(*pLabelInfo));
+    AddCommand(CMD_INSERTDEBUGUTILSLABELEXT);
 }
 
 void VkVizCommandBuffer::NextSubpass(VkSubpassContents contents) { AddCommand(CMD_NEXTSUBPASS); }

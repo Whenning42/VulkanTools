@@ -34,7 +34,7 @@
 class VkViz : public layer_factory {
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this), outfile_num_(0), outfile_base_name_("vkviz_out"){};
+    VkViz() : layer_factory(this) {};
 
     // These functions are all implemented in vkviz.cpp.
 
@@ -56,6 +56,9 @@ class VkViz : public layer_factory {
 
     // Processes the submitted command buffers and updates any necessary output info.
     VkResult PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
+
+    // Used to track the start and end of frames.
+    VkResult PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 
     // These functions are implemented in vkviz_command_intercepts.cpp and just call the corresponding function on the
     // VkCommandBuffers corresponding VkVizCommandBuffer object.
@@ -175,18 +178,18 @@ class VkViz : public layer_factory {
                                    uint32_t query);
 
    private:
-    void AddRenderPass(const VkRenderPass* pRenderPass, const VkRenderPassCreateInfo* pCreateInfo) {
-        render_pass_map_[*pRenderPass] = VkVizRenderPass(*pRenderPass, pCreateInfo);
+    void AddRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkRenderPass* pRenderPass) {
+        render_pass_map_[*pRenderPass] = VkVizRenderPass(device, pCreateInfo, pRenderPass);
     }
 
-    void RemoveRenderPass(VkRenderPass render_pass) {
-        assert(render_pass_map_.find(render_pass) != render_pass_map.end());
+    void RemoveRenderPass(VkDevice device, VkRenderPass render_pass) {
+        assert(render_pass_map_.find(render_pass) != render_pass_map_.end());
         render_pass_map_.erase(render_pass);
     }
 
     VkVizRenderPass& GetRenderPass(VkRenderPass render_pass) {
-        assert(render_pass_indices_map.find(render_pass) != render_pass_indices_map.end());
-        return *render_pass_map_[render_pass]
+        assert(render_pass_map_.find(render_pass) != render_pass_map_.end());
+        return render_pass_map_[render_pass];
     }
 
     void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers) {
@@ -197,23 +200,21 @@ class VkViz : public layer_factory {
 
     void RemoveCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) {
         for (int i = 0; i < commandBufferCount; ++i) {
-            VkCommandBuffer& command_buffer = pCommandBuffers[i];
-            assert(command_buffer_map_.find(command_buffer) != command_buffer_map.find());
-            command_buffer_map.erase(command_buffer);
+            const VkCommandBuffer& command_buffer = pCommandBuffers[i];
+            assert(command_buffer_map_.find(command_buffer) != command_buffer_map_.end());
+            command_buffer_map_.erase(command_buffer);
         }
     }
 
     VkVizCommandBuffer& GetCommandBuffer(VkCommandBuffer command_buffer) {
-        assert(command_buffer_indices_map.find(command_buffer) != command_buffer_indices_map.end());
-        return *command_buffer_map_[command_buffer];
+        assert(command_buffer_map_.find(command_buffer) != command_buffer_map_.end());
+        return command_buffer_map_[command_buffer];
     }
 
     std::unordered_map<VkCommandBuffer, VkVizCommandBuffer> command_buffer_map_;
     std::unordered_map<VkRenderPass, VkVizRenderPass> render_pass_map_;
 
-    std::ofstream outfile_;
-    uint32_t outfile_num_;
-    std::string outfile_base_name_;
+    int current_frame_ = 0;
 };
 
 #endif  // VkViz_H

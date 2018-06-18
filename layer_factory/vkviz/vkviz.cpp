@@ -1,28 +1,6 @@
 #include "vkviz.h"
 #include <algorithm>
 
-
-VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
-    // Write dot file with cmd buffers for each submit
-    uint32_t node_num = 0;
-    std::string filename = outfile_base_name_ + std::to_string(outfile_num_) + ".dot";
-    outfile_.open(filename);
-    //printf("Opened: %s for writing.\n", filename.c_str());
-    // Write graphviz of cmd buffers
-    outfile_ << "digraph G {\n  node [shape=record];\n";
-    for (uint32_t i = 0; i < submitCount; ++i) {
-        for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            outfile_ << "  node" << node_num << "[ label = \"{<n> COMMAND BUFFER 0x" << pSubmits[i].pCommandBuffers[j] << " ";
-            for (const auto& cmd : cmdbuffer_map_[pSubmits[i].pCommandBuffers[j]]) {
-                outfile_ << "| " << cmdToString(cmd);
-            }
-            outfile_ << "];\n";
-        }
-    }
-    outfile_ << "}";
-    outfile_.close();
-}
-
 VkResult VkViz::PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) {
     GetCommandBuffer(commandBuffer).Begin();
 }
@@ -38,21 +16,41 @@ VkResult VkViz::PostCallAllocateCommandBuffers(VkDevice device, const VkCommandB
     AddCommandBuffers(pAllocateInfo, pCommandBuffers);
 }
 
-void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uin32_t commandBufferCount,
+void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
                                        const VkCommandBuffer* pCommandBuffers) {
     RemoveCommandBuffers(commandBufferCount, pCommandBuffers);
 }
 
 VkResult VkViz::PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,
                                          const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) {
-    AddRenderPass(pRenderPass, pCreateInfo);
+    AddRenderPass(device, pCreateInfo, pRenderPass);
 }
 
-void VkViz::PostCallDestroyRenderPass(VkDevice deice, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) {
-    RemoveRenderPass(renderPass);
+void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) {
+    RemoveRenderPass(device, renderPass);
 }
 
-VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {}
+VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
+    // Write cmd buffers to file
+    std::string filename = "vkvizout.frame" + std::to_string(current_frame_);
+    printf("File to write to: %s\n", filename.c_str());
+    std::ofstream outfile(filename, std::ios_base::app);
+    for (uint32_t i = 0; i < submitCount; ++i) {
+        for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
+            outfile << "Submitted command buffer: " << pSubmits[i].pCommandBuffers[j] << std::endl;
+            for (const auto& command : command_buffer_map_[pSubmits[i].pCommandBuffers[j]].Commands()) {
+                outfile << cmdToString(command.Type()).c_str() << std::endl;
+            }
+            outfile << std::endl;
+        }
+    }
+    outfile.close();
+}
+
+VkResult VkViz::PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
+    printf("Frame++\n");
+    current_frame_++;
+}
 
 // An instance needs to be declared to turn on a layer in the layer_factory framework
 VkViz vkviz_layer;

@@ -120,8 +120,7 @@ void VkViz::PostCallCmdDispatch(VkCommandBuffer commandBuffer, uint32_t groupCou
     GetCommandBuffer(commandBuffer).Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
-void VkViz::PostCallCmdDispatchBase(VkCommandBuffer commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY,
-                                    groupCountZ) {
+void VkViz::PostCallCmdDispatchBase(VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
     GetCommandBuffer(commandBuffer).DispatchBase(baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 }
 
@@ -134,7 +133,7 @@ void VkViz::PostCallCmdDispatchIndirect(VkCommandBuffer commandBuffer, VkBuffer 
     GetCommandBuffer(commandBuffer).DispatchIndirect(buffer, offset);
 }
 
-void VkViz::PostCallCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance) {
+void VkViz::PostCallCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
     GetCommandBuffer(commandBuffer).Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -187,11 +186,11 @@ void VkViz::PostCallCmdFillBuffer(VkCommandBuffer commandBuffer, VkBuffer dstBuf
 }
 
 void VkViz::PostCallCmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) {
-    GetCommandBuffer(commandBuffer).InsertDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo);
+    GetCommandBuffer(commandBuffer).InsertDebugUtilsLabelEXT(pLabelInfo);
 }
 
 void VkViz::PostCallCmdNextSubpass(VkCommandBuffer commandBuffer, VkSubpassContents contents) {
-    GetCommandBuffer(commandBuffer).NextSubpass(VkSubpassContents contents);
+    GetCommandBuffer(commandBuffer).NextSubpass(contents);
 }
 
 void VkViz::PostCallCmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask,
@@ -199,10 +198,7 @@ void VkViz::PostCallCmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipeline
                                        uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers,
                                        uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers,
                                        uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) {
-    GetCommandBuffer(commandBuffer)
-        .PipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers,
-                         bufferMemoryBarrierCount, VkBufferMemoryBarrier * pBufferMemoryBarriers, imageMemoryBarrierCount,
-                         VkImageMemoryBarrier * pImageMemoryBarriers)
+    GetCommandBuffer(commandBuffer).PipelineBarrier(srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 }
 
 void VkViz::PostCallCmdProcessCommandsNVX(VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) {
@@ -223,7 +219,7 @@ void VkViz::PostCallCmdPushDescriptorSetKHR(VkCommandBuffer commandBuffer, VkPip
 void VkViz::PostCallCmdPushDescriptorSetWithTemplateKHR(VkCommandBuffer commandBuffer,
                                                         VkDescriptorUpdateTemplate descriptorUpdateTemplate,
                                                         VkPipelineLayout layout, uint32_t set, const void* pData) {
-    GetCommandBuffer(commandBuffer).PushDescriptorSetWithTemplateKHR(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
+    GetCommandBuffer(commandBuffer).PushDescriptorSetWithTemplateKHR(descriptorUpdateTemplate, layout, set, pData);
 }
 
 void VkViz::PostCallCmdReserveSpaceForCommandsNVX(VkCommandBuffer commandBuffer,
@@ -243,7 +239,7 @@ void VkViz::PostCallCmdResetQueryPool(VkCommandBuffer commandBuffer, VkQueryPool
 void VkViz::PostCallCmdResolveImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage,
                                     VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageResolve* pRegions) {
     GetCommandBuffer(commandBuffer)
-        .ResolveImage(srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, VkImageResolve * pRegions);
+        .ResolveImage(srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
 
 void VkViz::PostCallCmdSetBlendConstants(VkCommandBuffer commandBuffer, const float blendConstants[4]) {
@@ -286,7 +282,7 @@ void VkViz::PostCallCmdSetSampleLocationsEXT(VkCommandBuffer commandBuffer, cons
 
 void VkViz::PostCallCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount,
                                   const VkRect2D* pScissors) {
-    GetCommandBuffer(commandBuffer).SetScissor(firstScissor, scissorCount, VkRect2D * pScissors);
+    GetCommandBuffer(commandBuffer).SetScissor(firstScissor, scissorCount, pScissors);
 }
 
 void VkViz::PostCallCmdSetStencilCompareMask(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask) {
@@ -322,7 +318,7 @@ void VkViz::PostCallCmdWaitEvents(VkCommandBuffer commandBuffer, uint32_t eventC
                                   const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount,
                                   const VkImageMemoryBarrier* pImageMemoryBarriers) {
     GetCommandBuffer(commandBuffer)
-        .WaitEvents(eventCount, pEvents, srcStageMask, dstStagemask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount,
+        .WaitEvents(eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount,
                     pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 }
 
@@ -334,10 +330,6 @@ void VkViz::PostCallCmdWriteBufferMarkerAMD(VkCommandBuffer commandBuffer, VkPip
 void VkViz::PostCallCmdWriteTimestamp(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool,
                                       uint32_t query) {
     GetCommandBuffer(commandBuffer).WriteTimestamp(pipelineStage, queryPool, query);
-}
-
-VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
-    GetCommandBuffer(commandBuffer).QueueSubmit(queue, submitCount, pSubmits, fence);
 }
 
 #endif  // Vkviz_Command_Intercepts_H

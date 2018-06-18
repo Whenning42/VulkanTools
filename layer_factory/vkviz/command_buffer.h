@@ -1,6 +1,10 @@
 #include "commands.h"
 
 #include <algorithm>
+#include <cassert>
+#include <vector>
+#include <vulkan.h>
+#include <unordered_map>
 
 
 /* CodeGen? */
@@ -19,17 +23,17 @@ enum MEMORY_TYPE { IMAGE_MEMORY, BUFFER_MEMORY };
 
 enum READ_WRITE { READ, WRITE };
 
-VkExtent3D extentFromOffsets(VkOffset3D first, VkOffset3D second) {
+inline VkExtent3D extentFromOffsets(VkOffset3D first, VkOffset3D second) {
     return {(uint32_t)std::abs((int64_t)first.x - second.x), (uint32_t)std::abs((int64_t)first.y - second.y),
             (uint32_t)std::abs((int64_t)first.z - second.z)};
 }
 
-VkOffset3D cornerFromOffsets(VkOffset3D first, VkOffset3D second) {
+inline VkOffset3D cornerFromOffsets(VkOffset3D first, VkOffset3D second) {
     return {std::min(first.x, second.x), std::min(first.y, second.y), std::min(first.z, second.z)};
 }
 
 
-VkImageSubresourceRange RangeFromLayers(VkImageSubresourceLayers layers) {
+inline VkImageSubresourceRange RangeFromLayers(VkImageSubresourceLayers layers) {
     VkImageSubresourceRange range;
     range.aspectMask = layers.aspectMask;
     range.baseMipLevel = layers.mipLevel;
@@ -92,6 +96,8 @@ struct BufferRegion {
     uint32_t row_length = 0;
     uint32_t image_height = 0;
 
+    BufferRegion(VkDeviceSize offset, VkDeviceSize size): offset(offset), size(size) {};
+
     BufferRegion(READ_WRITE rw, const VkBufferCopy& copy) {
         if (rw == READ) {
             offset = copy.srcOffset;
@@ -146,14 +152,23 @@ struct MemoryAccess {
         return access;
     }
 
+    static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
+        MemoryAccess access;
+        access.type = BUFFER_MEMORY;
+        access.is_read = rw;
+        access.data = new BufferAccess({buffer, {BufferRegion(offset, size)}});
+        return access;
+    }
+
     template <typename T>
     static MemoryAccess ImageView(READ_WRITE rw, VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
-        std::vector<ImageRegion> regions = ImageRegion(image_view, regionCount, pRegions);
-        return Image(rw, image_view.Image(), regions.size(), regions.data());
+        //std::vector<ImageRegion> regions = ImageRegion(image_view, regionCount, pRegions);
+        assert(0);
+        return Image(rw, image_view.Image(), regionCount, pRegions);
     }
 };
 
-void AddAccess(VkCommandBuffer cmdBuffer, MemoryAccess access, CMD_TYPE type) {
+inline void AddAccess(VkCommandBuffer cmdBuffer, MemoryAccess access, CMD_TYPE type) {
     printf("Memory access in cmd buffer: %d.\n", cmdBuffer);
     printf("For command: %s.\n", cmdToString(type).c_str());
     switch (access.is_read) {
@@ -177,37 +192,46 @@ void AddAccess(VkCommandBuffer cmdBuffer, MemoryAccess access, CMD_TYPE type) {
 }
 
 template <typename T>
-MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {
+inline MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {
     return MemoryAccess::Image(READ, image, regionCount, pRegions);
 }
 
 template <typename T>
-MemoryAccess ImageWrite(VkImage image, uint32_t regionCount, const T* pRegions) {
+inline MemoryAccess ImageWrite(VkImage image, uint32_t regionCount, const T* pRegions) {
     return MemoryAccess::Image(WRITE, image, regionCount, pRegions);
 }
 
 // Generates corresponding ImageRead()
 template <typename T>
-MemoryAccess ImageViewRead(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
+inline MemoryAccess ImageViewRead(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
     assert(0);
     //return MemoryAccess::ImageView(READ, image_view, regionCount, pRegions);
 }
 
 // Generates corresponding ImageWrite()
 template <typename T>
-MemoryAccess ImageViewWrite(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
+inline MemoryAccess ImageViewWrite(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
     return MemoryAccess::ImageView(WRITE, image_view, regionCount, pRegions);
 }
 
 template <typename T>
-MemoryAccess BufferRead(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
+inline MemoryAccess BufferRead(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
     return MemoryAccess::Buffer(READ, buffer, regionCount, pRegions);
 }
 
+inline MemoryAccess BufferRead(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
+    return MemoryAccess::Buffer(READ, buffer, offset, size);
+}
+
 template <typename T>
-MemoryAccess BufferWrite(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
+inline MemoryAccess BufferWrite(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
     return MemoryAccess::Buffer(WRITE, buffer, regionCount, pRegions);
 }
+
+inline MemoryAccess BufferWrite(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
+    return MemoryAccess::Buffer(WRITE, buffer, offset, size);
+}
+
 
 class VkVizAttachment {
     VkVizImageView image_view;
@@ -240,38 +264,49 @@ class VkVizRenderPass {
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkSubpassDescription> subpasses;
     std::vector<VkSubpassDependency> dependencies;
-    static std::unordered_map<VkRenderPass, VkVizRenderPass*> render_passes_;
+//    static std::unordered_map<VkRenderPass, VkVizRenderPass*> render_passes_;
 
    public:
-    static VkVizRenderPass& Get(VkRenderPass render_pass) { return *render_passes_[render_pass];};
 
-    VkVizRenderPass(VkDevice device, VkRenderPassCreateInfo* pRenderPassCreateInfo, VkRenderPass* pRenderPass) {
-        for (int i = 0; i < pRenderPassCreateInfo->attachmentCount; ++i) {
-            attachments.push_back(pRenderPassCreateInfo->pAttachments[i]);
+    // Default constructor necessary to put VkVizRenderPass into maps
+    VkVizRenderPass(): render_pass(nullptr) {}
+
+//    static VkVizRenderPass& Get(VkRenderPass render_pass) { return *render_passes_[render_pass];};
+    VkVizRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkRenderPass* pRenderPass) {
+        for (int i = 0; i < pCreateInfo->attachmentCount; ++i) {
+            attachments.push_back(pCreateInfo->pAttachments[i]);
         }
-        for (int i = 0; i < pRenderPassCreateInfo->subpassCount; ++i) {
-            subpasses.push_back(pRenderPassCreateInfo->pSubpasses[i]);
+        for (int i = 0; i < pCreateInfo->subpassCount; ++i) {
+            subpasses.push_back(pCreateInfo->pSubpasses[i]);
         }
-        for (int i = 0; i < pRenderPassCreateInfo->dependencyCount; ++i) {
-            dependencies.push_back(pRenderPassCreateInfo->pDependencies[i]);
+        for (int i = 0; i < pCreateInfo->dependencyCount; ++i) {
+            dependencies.push_back(pCreateInfo->pDependencies[i]);
         }
 
-        render_passes_[*pRenderPass] = this;
+ //       render_passes_[*pRenderPass] = this;
     }
 
     VkSubpassDescription Subpass(size_t index) const {return subpasses[index];}
 };
 
-class VkVizFramebuffer {};
+class VkVizFramebuffer {
+    VkFramebuffer framebuffer_;
+//    static std::unordered_map<VkFramebuffer, VkVizFramebuffer> framebuffer_map_;
+
+ public:
+//    static VkVizFramebuffer& Get(VkFramebuffer framebuffer) {return framebuffer_map_[framebuffer];}
+      VkVizFramebuffer() : framebuffer_(nullptr) {};
+};
 
 class VkVizRenderPassInstance {
     const VkVizRenderPass& render_pass;
     int current_subpass_index = 0;
-    VkVizFramebuffer& framebuffer;
+    const VkVizFramebuffer& framebuffer;
 
    public:
-    VkVizRenderPassInstance(VkRenderPass render_pass, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents)
-        : render_pass(VkVizRenderPass::Get(render_pass)), framebuffer(framebuffer){};
+    VkVizRenderPassInstance(const VkRenderPassBeginInfo* pRenderPassBegin)
+        : render_pass(VkVizRenderPass()), framebuffer(VkVizFramebuffer()){};
+//        : render_pass(VkVizRenderPass::Get(pRenderPassBegin->renderPass)), framebuffer(VkVizFramebuffer::Get(pRenderPassBegin->framebuffer)){};
 
     void NextSubpass(VkSubpassContents) { ++current_subpass_index; }
 
@@ -288,10 +323,13 @@ class Command {
     Command(CMD_TYPE type) : type_(type){};
     Command(CMD_TYPE type, MemoryAccess access) : type_(type), accesses_({access}){};
     Command(CMD_TYPE type, std::vector<MemoryAccess> accesses) : type_(type), accesses_(accesses){};
+    CMD_TYPE Type() const { return type_; }
 };
 
 class VkVizCommandBuffer {
     std::vector<Command> commands_;
+    VkCommandBuffer buffer_;
+    VkCommandBufferLevel level_;
 
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
@@ -301,6 +339,13 @@ class VkVizCommandBuffer {
     void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) { commands_.push_back(Command(type, accesses)); };
 
    public:
+    // Default constructor should only be used by unordered maps
+    VkVizCommandBuffer() {}
+
+    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : buffer_(commandBuffer), level_(level) {}
+
+    std::vector<Command>& Commands() { return commands_; }
+
     // These three functions aren't of the form vkCmd*.
     VkResult Begin();
     VkResult End();
@@ -336,7 +381,7 @@ class VkVizCommandBuffer {
     void CopyQueryPoolResults(VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,
                               VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags);
     void DebugMarkerBeginEXT(const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
-    void DebugMarkerEndEXT(VkCommandBuffer commandBuffer);
+    void DebugMarkerEndEXT();
     void DebugMarkerInsertEXT(const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
     void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
     void DispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY,
@@ -353,9 +398,9 @@ class VkVizCommandBuffer {
     void DrawIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
     void DrawIndirectCountAMD(VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset,
                               uint32_t maxDrawCount, uint32_t stride);
-    void EndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer);
+    void EndDebugUtilsLabelEXT();
     void EndQuery(VkQueryPool queryPool, uint32_t query);
-    void EndRenderPass(VkCommandBuffer commandBuffer);
+    void EndRenderPass();
     void ExecuteCommands(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers);
     void FillBuffer(VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data);
     void InsertDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo);
