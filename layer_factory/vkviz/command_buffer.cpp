@@ -1,5 +1,16 @@
 #include "command_buffer.h"
 
+std::string kMemoryTypeNames[] = {"image memory", "buffer memory"};
+std::string memoryTypeString(MEMORY_TYPE type) {
+    return kMemoryTypeNames[type];
+}
+
+std::string kReadWriteStrings[] = {"read", "write"};
+std::string readWriteString(READ_WRITE rw) {
+    return kReadWriteStrings[rw];
+}
+
+
 VkResult VkVizCommandBuffer::Begin() { AddCommand(CMD_BEGINCOMMANDBUFFER); }
 
 VkResult VkVizCommandBuffer::End() { AddCommand(CMD_ENDCOMMANDBUFFER); }
@@ -35,14 +46,20 @@ void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoin
 }
 
 void VkVizCommandBuffer::BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {
-    AddCommand(CMD_BINDINDEXBUFFER);
+    //commands_.emplace_back(std::unique_ptr<Command>(new IndexBufferBind(CMD_BINDINDEXBUFFER, buffer)));
+    commands_.emplace_back(std::make_unique<IndexBufferBind>(CMD_BINDINDEXBUFFER, buffer));
 }
 
 void VkVizCommandBuffer::BindPipeline(VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) { AddCommand(CMD_BINDPIPELINE); }
 
 void VkVizCommandBuffer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers,
                                            const VkDeviceSize* pOffsets) {
-    AddCommand(CMD_BINDVERTEXBUFFERS);
+    std::vector<VkBuffer> vertex_buffers;
+    for(int i=0; i<bindingCount; ++i) {
+        vertex_buffers.push_back(pBuffers[i]);
+    }
+
+    commands_.emplace_back(std::make_unique<VertexBufferBind>(CMD_BINDVERTEXBUFFERS, vertex_buffers));
 }
 
 void VkVizCommandBuffer::BlitImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,

@@ -34,13 +34,31 @@
 class VkViz : public layer_factory {
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this) {};
+    VkViz() : layer_factory(this), out_file_("vkviz_capture") {};
 
     // These functions are all implemented in vkviz.cpp.
 
     VkResult PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo);
     VkResult PostCallEndCommandBuffer(VkCommandBuffer commandBuffer);
     VkResult PostCallResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
+
+    // Processes the submitted command buffers and updates any necessary output info.
+    VkResult PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
+
+    // Used to track the start and end of frames.
+    VkResult PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
+
+
+    VkResult PostCallCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) {
+        device_map_.emplace(*pDevice, VkVizDevice(*pDevice));
+    }
+
+    // Create calls here
+    // VKAPI_ATTR VkResult VKAPI_CALL
+
+    VkResult PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,
+                                      const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
+    void PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator);
 
     // Need to intercept this call to determine which command buffers are primary or secondary ones. Also creates
     // VkVizCommandBuffers.
@@ -49,22 +67,18 @@ class VkViz : public layer_factory {
     void PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
                                     const VkCommandBuffer* pCommandBuffers);
 
-    // Creates a VkVizRenderPass object.
-    VkResult PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,
-                                      const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
-    void PostCallDestroyRenderPass(VkDevice deice, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator);
+    // end create calls
 
-    // Processes the submitted command buffers and updates any necessary output info.
-    VkResult PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
-
-    // Used to track the start and end of frames.
-    VkResult PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 
     // Tracks memory bindings.
-    VkResult PostCallBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset);
+    VkResult PostCallBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
+        device_map_.at(device).BindBufferMemory(buffer, memory, memoryOffset);
+    }
 
     // Tracks memory bindings.
-    VkResult PostCallBindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset);
+    VkResult PostCallBindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
+        device_map_.at(device).BindImageMemory(image, memory, memoryOffset);
+    }
 
     // These functions are implemented in vkviz_command_intercepts.cpp and just call the corresponding function on the
     // VkCommandBuffers corresponding VkVizCommandBuffer object.
@@ -185,41 +199,39 @@ class VkViz : public layer_factory {
 
    private:
     void AddRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkRenderPass* pRenderPass) {
-        render_pass_map_[*pRenderPass] = VkVizRenderPass(device, pCreateInfo, pRenderPass);
+        render_pass_map_.emplace(*pRenderPass, VkVizRenderPass(device, pCreateInfo, pRenderPass));
     }
 
     void RemoveRenderPass(VkDevice device, VkRenderPass render_pass) {
-        assert(render_pass_map_.find(render_pass) != render_pass_map_.end());
-        render_pass_map_.erase(render_pass);
+        assert(render_pass_map_.erase(render_pass));
     }
 
     VkVizRenderPass& GetRenderPass(VkRenderPass render_pass) {
-        assert(render_pass_map_.find(render_pass) != render_pass_map_.end());
-        return render_pass_map_[render_pass];
+        return render_pass_map_.at(render_pass);
     }
 
     void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers) {
         for (int i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
-            command_buffer_map_[pCommandBuffers[i]] = VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level);
+            command_buffer_map_.emplace(pCommandBuffers[i], VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level));
         }
     }
 
     void RemoveCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) {
         for (int i = 0; i < commandBufferCount; ++i) {
             const VkCommandBuffer& command_buffer = pCommandBuffers[i];
-            assert(command_buffer_map_.find(command_buffer) != command_buffer_map_.end());
-            command_buffer_map_.erase(command_buffer);
+            assert(command_buffer_map_.erase(command_buffer));
         }
     }
 
     VkVizCommandBuffer& GetCommandBuffer(VkCommandBuffer command_buffer) {
-        assert(command_buffer_map_.find(command_buffer) != command_buffer_map_.end());
-        return command_buffer_map_[command_buffer];
+        return command_buffer_map_.at(command_buffer);
     }
 
     std::unordered_map<VkCommandBuffer, VkVizCommandBuffer> command_buffer_map_;
     std::unordered_map<VkRenderPass, VkVizRenderPass> render_pass_map_;
+    std::unordered_map<VkDevice, VkVizDevice> device_map_;
 
+    std::ofstream out_file_;
     int current_frame_ = 0;
 };
 

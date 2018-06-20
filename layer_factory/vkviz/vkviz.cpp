@@ -31,24 +31,15 @@ void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, 
 }
 
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
-    // Write cmd buffers to file
-    std::string filename = "vkvizout.frame" + std::to_string(current_frame_);
-    printf("File to write to: %s\n", filename.c_str());
-    std::ofstream outfile(filename, std::ios_base::app);
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            outfile << "Submitted command buffer: " << pSubmits[i].pCommandBuffers[j] << std::endl;
-            for (const auto& command : command_buffer_map_[pSubmits[i].pCommandBuffers[j]].Commands()) {
-                outfile << cmdToString(command.Type()).c_str() << std::endl;
-            }
-            outfile << std::endl;
+            GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).LogCommands(out_file_);
         }
     }
-    outfile.close();
 }
 
 VkResult VkViz::PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
-    printf("Frame++\n");
+    out_file_ << "Frame: " << current_frame_ << std::endl;
     current_frame_++;
 }
 

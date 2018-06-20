@@ -1,3 +1,6 @@
+#ifndef COMMAND_BUFFER_H
+#define COMMAND_BUFFER_H
+
 #include "commands.h"
 #include "memory_barrier.h"
 
@@ -6,7 +9,8 @@
 #include <vector>
 #include <vulkan.h>
 #include <unordered_map>
-
+#include <fstream>
+#include <memory>
 
 /* CodeGen? */
 class VkVizPipelineBarrier {
@@ -36,8 +40,11 @@ class VkVizImageView {
 
 // TODO clean this up
 enum MEMORY_TYPE { IMAGE_MEMORY, BUFFER_MEMORY };
+std::string memoryTypeString(MEMORY_TYPE type);
+
 
 enum READ_WRITE { READ, WRITE };
+std::string readWriteString(READ_WRITE rw);
 
 inline VkExtent3D extentFromOffsets(VkOffset3D first, VkOffset3D second) {
     return {(uint32_t)std::abs((int64_t)first.x - second.x), (uint32_t)std::abs((int64_t)first.y - second.y),
@@ -136,7 +143,7 @@ struct BufferAccess {
 };
 
 struct MemoryAccess {
-    bool is_read;
+    READ_WRITE read_or_write;
     MEMORY_TYPE type;
     void* data;
 
@@ -144,7 +151,7 @@ struct MemoryAccess {
     static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions) {
         MemoryAccess access;
         access.type = IMAGE_MEMORY;
-        access.is_read = rw;
+        access.read_or_write = rw;
 
         std::vector<ImageRegion> regions;
         std::transform(pRegions, pRegions + regionCount, std::back_inserter(regions),
@@ -158,7 +165,7 @@ struct MemoryAccess {
     static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
         MemoryAccess access;
         access.type = BUFFER_MEMORY;
-        access.is_read = rw;
+        access.read_or_write = rw;
 
         std::vector<BufferRegion> regions;
         std::transform(pRegions, pRegions + regionCount, std::back_inserter(regions),
@@ -171,7 +178,7 @@ struct MemoryAccess {
     static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
         MemoryAccess access;
         access.type = BUFFER_MEMORY;
-        access.is_read = rw;
+        access.read_or_write = rw;
         access.data = new BufferAccess({buffer, {BufferRegion(offset, size)}});
         return access;
     }
@@ -182,12 +189,28 @@ struct MemoryAccess {
         assert(0);
         return Image(rw, image_view.Image(), regionCount, pRegions);
     }
+
+    void Log(std::ofstream& out_file) const {
+        out_file << "Memory access" << std::endl;
+        out_file << "  Is read or write: " << readWriteString(read_or_write) << std::endl;
+        out_file << "  Of resource: " << memoryTypeString(type) << std::endl;
+        void* handle;
+        if (type == IMAGE_MEMORY) {
+            ImageAccess access = *(ImageAccess*)data;
+            handle = access.image;
+        }
+        if (type == BUFFER_MEMORY) {
+            BufferAccess access = *(BufferAccess*)data;
+            handle = access.buffer;
+        }
+        out_file << "  With handle: " << handle << std::endl;
+    }
 };
 
 inline void AddAccess(VkCommandBuffer cmdBuffer, MemoryAccess access, CMD_TYPE type) {
     printf("Memory access in cmd buffer: %d.\n", cmdBuffer);
     printf("For command: %s.\n", cmdToString(type).c_str());
-    switch (access.is_read) {
+    switch (access.read_or_write) {
         case READ:
             printf("Was a read.\n");
         case WRITE:
@@ -284,8 +307,8 @@ class VkVizRenderPass {
 
    public:
 
-    // Default constructor necessary to put VkVizRenderPass into maps
-    VkVizRenderPass(): render_pass(nullptr) {}
+    // Just here for testing
+    VkVizRenderPass() {};
 
 //    static VkVizRenderPass& Get(VkRenderPass render_pass) { return *render_passes_[render_pass];};
     VkVizRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkRenderPass* pRenderPass) {
@@ -333,38 +356,84 @@ class VkVizRenderPassInstance {
 
 class Command {
     CMD_TYPE type_ = CMD_NONE;
-    std::vector<MemoryAccess> accesses_;
+
+    std::vector<VkBuffer> vertex_buffers_;
 
    public:
     Command(CMD_TYPE type) : type_(type){};
-    Command(CMD_TYPE type, MemoryAccess access) : type_(type), accesses_({access}){};
-    Command(CMD_TYPE type, std::vector<MemoryAccess> accesses) : type_(type), accesses_(accesses){};
-    CMD_TYPE Type() const { return type_; }
+
+    virtual void Log(std::ofstream& out_file) const {
+        out_file << cmdToString(type_) << std::endl;
+    }
+};
+
+class Access: public Command {
+    std::vector<MemoryAccess> accesses_;
+
+ public:
+    Access(CMD_TYPE type, MemoryAccess access) : Command(type), accesses_({access}){};
+    Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : Command(type), accesses_(accesses){};
+
+    void Log(std::ofstream& out_file) const override {
+        Command::Log(out_file);
+        for(const auto& access : accesses_) {
+            access.Log(out_file);
+        }
+    }
+};
+
+// We might want to track this as command buffer state as opposed to as a seperate command.
+class IndexBufferBind : public Command {
+    VkBuffer index_buffer_ = nullptr;
+ public:
+    IndexBufferBind(CMD_TYPE type, VkBuffer index_buffer) : Command(type), index_buffer_(index_buffer){};
+    void Log(std::ofstream& out_file) const override {
+        Command::Log(out_file);
+        out_file << "  Bound index buffer: " << index_buffer_ << std::endl;
+    }
+};
+
+// We might want to track this as command buffer state as opposed to as a seperate command.
+class VertexBufferBind : public Command {
+    std::vector<VkBuffer> vertex_buffers_;
+ public:
+    VertexBufferBind(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) : Command(type), vertex_buffers_(vertex_buffers){};
+    void Log(std::ofstream& out_file) const override {
+        Command::Log(out_file);
+        for(const auto& vertex_buffer : vertex_buffers_) {
+            out_file << "  Bound vertex buffer: " << vertex_buffer << std::endl;
+        }
+    }
 };
 
 class VkVizCommandBuffer {
-    std::vector<Command> commands_;
+    std::vector<std::unique_ptr<Command>> commands_;
     VkCommandBuffer buffer_;
     VkCommandBufferLevel level_;
 
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    void AddCommand(CMD_TYPE type) { commands_.push_back(Command(type)); };
-    void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(Command(type, access)); };
+    void AddCommand(CMD_TYPE type) { commands_.push_back(std::unique_ptr<Command>(new Command(type))); };
+    void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(std::unique_ptr<Command>(new Access(type, access))); };
+    void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) {commands_.push_back(std::unique_ptr<Command>(new Access(type, accesses))); };
+    void AddCommand(CMD_TYPE type, VkBuffer index_buffer) { commands_.push_back(std::unique_ptr<Command>(new IndexBufferBind(type, index_buffer))); };
+    void AddCommand(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) { commands_.push_back(std::unique_ptr<Command>(new VertexBufferBind(type, vertex_buffers))); };
     void AddCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) {
-        commands_.push_back(Command(type));
+        commands_.push_back(std::unique_ptr<Command>(new Command(type)));
         printf("Pipeline barrier tracking unhandled\n");
     }
-    void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) { commands_.push_back(Command(type, accesses)); };
 
    public:
-    // Default constructor should only be used by unordered maps
-    VkVizCommandBuffer() {}
+    void LogCommands(std::ofstream& out_file) {
+        out_file << "Submitted command buffer: " << buffer_ << std::endl;
+        for(const auto& command : commands_) {
+            command->Log(out_file);
+        }
+        out_file << std::endl;
+    }
 
     VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : buffer_(commandBuffer), level_(level) {}
-
-    std::vector<Command>& Commands() { return commands_; }
 
     // These three functions aren't of the form vkCmd*.
     VkResult Begin();
@@ -465,3 +534,5 @@ class VkVizCommandBuffer {
     VkResult QueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 };
 /* CodeGen? */
+
+#endif  // COMMAND_BUFFER_H
