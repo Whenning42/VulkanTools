@@ -1,4 +1,5 @@
 #include "commands.h"
+#include "memory_barrier.h"
 
 #include <algorithm>
 #include <cassert>
@@ -8,6 +9,21 @@
 
 
 /* CodeGen? */
+class VkVizPipelineBarrier {
+    VkPipelineStageFlags src_stage_mask_;
+    VkPipelineStageFlags dst_stage_mask_;
+    VkDependencyFlags dependency_flags_;
+    std::vector<MemoryBarrier*> memory_barriers_;
+
+   public:
+    VkVizPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags,
+                         std::vector<MemoryBarrier*> barriers)
+        : src_stage_mask_(srcStageMask),
+          dst_stage_mask_(dstStageMask),
+          dependency_flags_(dependencyFlags),
+          memory_barriers_(barriers) {}
+};
+
 class VkVizImageView {
     // Subset of VkImageViewCreateInfo members
     VkImage image;
@@ -336,6 +352,10 @@ class VkVizCommandBuffer {
 
     void AddCommand(CMD_TYPE type) { commands_.push_back(Command(type)); };
     void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(Command(type, access)); };
+    void AddCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) {
+        commands_.push_back(Command(type));
+        printf("Pipeline barrier tracking unhandled\n");
+    }
     void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) { commands_.push_back(Command(type, accesses)); };
 
    public:

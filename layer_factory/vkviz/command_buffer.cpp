@@ -295,8 +295,34 @@ void VkVizCommandBuffer::PipelineBarrier(VkPipelineStageFlags srcStageMask, VkPi
                                          const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount,
                                          const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount,
                                          const VkImageMemoryBarrier* pImageMemoryBarriers) {
-    AddCommand(CMD_PIPELINEBARRIER);
     // Add a pipeline barrier
+
+    // If outside render pass instance, first sync scope is all earlier submitted commands and second scope is all later commands
+    // If inside a render pass instance, the same applies but the scope is limited to the current subpass
+    // In both cases, the sync scopes are limited to the given stage masks in the pipeline
+
+    // Add global, buffer, and image memory barriers
+    // Queue family and image format transitions can be ignored?
+
+    std::vector<MemoryBarrier*> memory_barriers;
+    for (int i = 0; i < memoryBarrierCount; ++i) {
+        const VkMemoryBarrier& barrier = pMemoryBarriers[i];
+        memory_barriers.push_back(new GlobalMemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask));
+    }
+
+    for (int i = 0; i < bufferMemoryBarrierCount; ++i) {
+        const VkBufferMemoryBarrier& barrier = pBufferMemoryBarriers[i];
+        memory_barriers.push_back(
+            new BufferMemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask, barrier.buffer, {barrier.offset, barrier.size}));
+    }
+
+    for (int i = 0; i < imageMemoryBarrierCount; ++i) {
+        const VkImageMemoryBarrier& barrier = pImageMemoryBarriers[i];
+        memory_barriers.push_back(
+            new ImageMemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask, barrier.image, barrier.subresourceRange));
+    }
+
+    AddCommand(CMD_PIPELINEBARRIER, VkVizPipelineBarrier(srcStageMask, dstStageMask, dependencyFlags, std::move(memory_barriers)));
 }
 
 void VkVizCommandBuffer::ProcessCommandsNVX(const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) {

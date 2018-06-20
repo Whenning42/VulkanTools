@@ -60,6 +60,12 @@ class VkViz : public layer_factory {
     // Used to track the start and end of frames.
     VkResult PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 
+    // Tracks memory bindings.
+    VkResult PostCallBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset);
+
+    // Tracks memory bindings.
+    VkResult PostCallBindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset);
+
     // These functions are implemented in vkviz_command_intercepts.cpp and just call the corresponding function on the
     // VkCommandBuffers corresponding VkVizCommandBuffer object.
     void PostCallCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo);
