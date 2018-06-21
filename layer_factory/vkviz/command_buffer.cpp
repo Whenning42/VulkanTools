@@ -321,22 +321,22 @@ void VkVizCommandBuffer::PipelineBarrier(VkPipelineStageFlags srcStageMask, VkPi
     // Add global, buffer, and image memory barriers
     // Queue family and image format transitions can be ignored?
 
-    std::vector<MemoryBarrier*> memory_barriers;
+    std::vector<std::unique_ptr<MemoryBarrier>> memory_barriers;
     for (int i = 0; i < memoryBarrierCount; ++i) {
         const VkMemoryBarrier& barrier = pMemoryBarriers[i];
-        memory_barriers.push_back(new GlobalMemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask));
+        memory_barriers.emplace_back(std::make_unique<GlobalMemoryBarrier>(barrier.srcAccessMask, barrier.dstAccessMask));
     }
 
     for (int i = 0; i < bufferMemoryBarrierCount; ++i) {
         const VkBufferMemoryBarrier& barrier = pBufferMemoryBarriers[i];
-        memory_barriers.push_back(
-            new BufferMemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask, barrier.buffer, {barrier.offset, barrier.size}));
+        memory_barriers.emplace_back(
+            std::make_unique<BufferMemoryBarrier>(barrier.srcAccessMask, barrier.dstAccessMask, barrier.buffer, barrier.offset, barrier.size));
     }
 
     for (int i = 0; i < imageMemoryBarrierCount; ++i) {
         const VkImageMemoryBarrier& barrier = pImageMemoryBarriers[i];
-        memory_barriers.push_back(
-            new ImageMemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask, barrier.image, barrier.subresourceRange));
+        memory_barriers.emplace_back(
+            std::make_unique<ImageMemoryBarrier>(barrier.srcAccessMask, barrier.dstAccessMask, barrier.image, barrier.subresourceRange));
     }
 
     AddCommand(CMD_PIPELINEBARRIER, VkVizPipelineBarrier(srcStageMask, dstStageMask, dependencyFlags, std::move(memory_barriers)));

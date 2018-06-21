@@ -13,19 +13,32 @@
 #include <memory>
 
 /* CodeGen? */
-class VkVizPipelineBarrier {
-    VkPipelineStageFlags src_stage_mask_;
-    VkPipelineStageFlags dst_stage_mask_;
-    VkDependencyFlags dependency_flags_;
-    std::vector<MemoryBarrier*> memory_barriers_;
+struct VkVizPipelineBarrier {
+    VkPipelineStageFlags src_stage_mask;
+    VkPipelineStageFlags dst_stage_mask;
+    VkDependencyFlags dependency_flags;
+    std::vector<std::unique_ptr<MemoryBarrier>> memory_barriers;
 
-   public:
     VkVizPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags,
-                         std::vector<MemoryBarrier*> barriers)
-        : src_stage_mask_(srcStageMask),
-          dst_stage_mask_(dstStageMask),
-          dependency_flags_(dependencyFlags),
-          memory_barriers_(barriers) {}
+                         std::vector<std::unique_ptr<MemoryBarrier>> barriers)
+        : src_stage_mask(srcStageMask),
+          dst_stage_mask(dstStageMask),
+          dependency_flags(dependencyFlags),
+          memory_barriers(std::move(barriers)) {}
+};
+
+class VkVizImage {
+    VkImage image_;
+    VkDevice device_;
+ public:
+    VkVizImage(VkImage image, VkDevice device) : image_(image), device_(device) {}
+};
+
+class VkVizBuffer {
+    VkBuffer buffer_;
+    VkDevice device_;
+ public:
+    VkVizBuffer(VkBuffer buffer, VkDevice device) : buffer_(buffer), device_(device) {}
 };
 
 class VkVizImageView {
@@ -402,6 +415,18 @@ class VertexBufferBind : public Command {
         Command::Log(out_file);
         for(const auto& vertex_buffer : vertex_buffers_) {
             out_file << "  Bound vertex buffer: " << vertex_buffer << std::endl;
+        }
+    }
+};
+
+class PipelineBarrier : public Command {
+    VkVizPipelineBarrier barrier_;
+ public:
+    PipelineBarrier(CMD_TYPE type, VkVizPipelineBarrier barrier) : Command(type), barrier_(barrier) {};
+    void Log(std::ofstream& out_file) const override {
+        Command::Log(out_file);
+        for(const auto& barrier : barrier_.memory_barriers) {
+            barrier->Log(out_file);
         }
     }
 };
