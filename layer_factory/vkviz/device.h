@@ -23,13 +23,18 @@ class VkVizDevice {
         image_bindings_[image] = {memoryOffset, requirements.size};
     }
 
+    void UnbindImageMemory(VkImage image) { assert(image_bindings_.erase(image)); }
+
     VkResult BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
         // Could probably cache requirements from an intercepted GetReqs call
+        printf("Bind buffer: %p\n", buffer);
         VkMemoryRequirements requirements;
         vkGetBufferMemoryRequirements(device_, buffer, &requirements);
         assert(buffer_bindings_.find(buffer) == buffer_bindings_.end());
         buffer_bindings_[buffer] = {memoryOffset, requirements.size};
     }
+
+    void UnbindBufferMemory(VkBuffer buffer) { assert(buffer_bindings_.erase(buffer)); }
 
     VkResult MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) {
         printf("Mapped memory at offset: %d, of size: %d\n", offset, size);

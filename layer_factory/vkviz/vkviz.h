@@ -54,18 +54,22 @@ class VkViz : public layer_factory {
     }
 
     // Create calls here
-    VkResult CreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) {
-        buffer_map_.emplace(pCreateInfo->buffer, VkVizBuffer(pCreateInfo->buffer, device));
+    VkResult PostCallCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
+                                  VkBuffer* pBuffer) {
+        buffer_map_.emplace(*pBuffer, VkVizBuffer(*pBuffer, device));
     }
-    VkResult DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) {
+    void PostCallDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) {
+        device_map_.at(device).UnbindBufferMemory(buffer);
         assert(buffer_map_.erase(buffer));
     }
 
-    VkResult CreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) {
-        image_map_.emplace(pCreateInfo->image, VkVizImage(pCreateInfo->image), device);
+    VkResult PostCallCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
+                                 VkImage* pImage) {
+        image_map_.emplace(*pImage, VkVizImage(*pImage, device));
     }
-    VkResult DestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) {
-        assert(buffer_map_.erase(image));
+    void PostCallDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) {
+        device_map_.at(device).UnbindImageMemory(image);
+        assert(image_map_.erase(image));
     }
 
     VkResult PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,

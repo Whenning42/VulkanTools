@@ -17,10 +17,13 @@ struct VkVizPipelineBarrier {
     VkPipelineStageFlags src_stage_mask;
     VkPipelineStageFlags dst_stage_mask;
     VkDependencyFlags dependency_flags;
-    std::vector<std::unique_ptr<MemoryBarrier>> memory_barriers;
+    std::vector<MemoryBarrier> memory_barriers;
 
+    VkVizPipelineBarrier(const VkVizPipelineBarrier&) = delete;
+    // VkVizPipelineBarrier& operator=(const VkVizPipelineBarrier&) = delete;
+    VkVizPipelineBarrier(VkVizPipelineBarrier&& other) = default;
     VkVizPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags,
-                         std::vector<std::unique_ptr<MemoryBarrier>> barriers)
+                         std::vector<MemoryBarrier> barriers)
         : src_stage_mask(srcStageMask),
           dst_stage_mask(dstStageMask),
           dependency_flags(dependencyFlags),
@@ -419,15 +422,17 @@ class VertexBufferBind : public Command {
     }
 };
 
-class PipelineBarrier : public Command {
+class PipelineBarrierCommand : public Command {
     VkVizPipelineBarrier barrier_;
  public:
-    PipelineBarrier(CMD_TYPE type, VkVizPipelineBarrier barrier) : Command(type), barrier_(barrier) {};
-    void Log(std::ofstream& out_file) const override {
-        Command::Log(out_file);
-        for(const auto& barrier : barrier_.memory_barriers) {
-            barrier->Log(out_file);
-        }
+  PipelineBarrierCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) : Command(type), barrier_(std::move(barrier)){};
+  void Log(std::ofstream& out_file) const override {
+      Command::Log(out_file);
+      out_file << "  Source stage mask: " << std::hex << std::showbase << barrier_.src_stage_mask << std::endl;
+      out_file << "  Destination stage mask: " << std::hex << std::showbase << barrier_.dst_stage_mask << std::endl;
+      for (const auto& memory_barrier : barrier_.memory_barriers) {
+          memory_barrier.Log(out_file);
+      }
     }
 };
 
@@ -439,14 +444,19 @@ class VkVizCommandBuffer {
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    void AddCommand(CMD_TYPE type) { commands_.push_back(std::unique_ptr<Command>(new Command(type))); };
-    void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(std::unique_ptr<Command>(new Access(type, access))); };
-    void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) {commands_.push_back(std::unique_ptr<Command>(new Access(type, accesses))); };
-    void AddCommand(CMD_TYPE type, VkBuffer index_buffer) { commands_.push_back(std::unique_ptr<Command>(new IndexBufferBind(type, index_buffer))); };
-    void AddCommand(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) { commands_.push_back(std::unique_ptr<Command>(new VertexBufferBind(type, vertex_buffers))); };
+    void AddCommand(CMD_TYPE type) { commands_.push_back(std::make_unique<Command>(type)); };
+    void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(std::make_unique<Access>(type, access)); };
+    void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) {
+        commands_.push_back(std::make_unique<Access>(type, accesses));
+    };
+    void AddCommand(CMD_TYPE type, VkBuffer index_buffer) {
+        commands_.push_back(std::make_unique<IndexBufferBind>(type, index_buffer));
+    };
+    void AddCommand(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) {
+        commands_.push_back(std::make_unique<VertexBufferBind>(type, vertex_buffers));
+    };
     void AddCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) {
-        commands_.push_back(std::unique_ptr<Command>(new Command(type)));
-        printf("Pipeline barrier tracking unhandled\n");
+        commands_.push_back(std::make_unique<PipelineBarrierCommand>(type, std::move(barrier)));
     }
 
    public:
