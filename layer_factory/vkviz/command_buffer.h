@@ -444,21 +444,6 @@ class VkVizCommandBuffer {
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    void AddCommand(CMD_TYPE type) { commands_.push_back(std::make_unique<Command>(type)); };
-    void AddCommand(CMD_TYPE type, MemoryAccess access) { commands_.push_back(std::make_unique<Access>(type, access)); };
-    void AddCommand(CMD_TYPE type, std::vector<MemoryAccess> accesses) {
-        commands_.push_back(std::make_unique<Access>(type, accesses));
-    };
-    void AddCommand(CMD_TYPE type, VkBuffer index_buffer) {
-        commands_.push_back(std::make_unique<IndexBufferBind>(type, index_buffer));
-    };
-    void AddCommand(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) {
-        commands_.push_back(std::make_unique<VertexBufferBind>(type, vertex_buffers));
-    };
-    void AddCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) {
-        commands_.push_back(std::make_unique<PipelineBarrierCommand>(type, std::move(barrier)));
-    }
-
    public:
     void LogCommands(std::ofstream& out_file) {
         out_file << "Submitted command buffer: " << buffer_ << std::endl;
