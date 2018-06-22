@@ -1,5 +1,5 @@
-#ifndef Commands_H
-#define Commands_H
+#ifndef COMMAND_ENUMS_H
+#define COMMAND_ENUMS_H
 
 #include <string>
 
@@ -76,4 +76,4 @@ enum CMD_TYPE {
 
 std::string cmdToString(CMD_TYPE cmd);
 
-#endif  // Commands_H
+#endif  // COMMAND_ENUMS_H
