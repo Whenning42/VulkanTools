@@ -106,7 +106,7 @@ class VkVizCommandBuffer {
     void LogCommands(std::ofstream& out_file) {
         out_file << "Submitted command buffer: " << buffer_ << std::endl;
         for(const auto& command : commands_) {
-            LogCommand(command, out_file);
+            Log(command, out_file);
         }
         out_file << std::endl;
     }

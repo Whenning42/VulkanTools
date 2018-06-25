@@ -72,6 +72,22 @@ class VkViz : public layer_factory {
         assert(image_map_.erase(image));
     }
 
+    VkResult PostCallMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
+                               VkMemoryMapFlags flags, void** ppData) {
+        device_map_.at(device).MapMemory(memory, offset, size, flags, ppData);
+    }
+
+    VkResult PostCallFlushMappedMemoryRanges(VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) {
+        device_map_.at(device).FlushMappedMemoryRanges(memoryRangeCount, pMemoryRanges);
+    }
+
+    VkResult PostCallInvalidateMappedMemoryRanges(VkDevice device, uint32_t memoryRangeCount,
+                                                  const VkMappedMemoryRange* pMemoryRanges) {
+        device_map_.at(device).InvalidateMappedMemoryRanges(memoryRangeCount, pMemoryRanges);
+    }
+
+    void PostCallUnmapMemory(VkDevice device, VkDeviceMemory memory) { device_map_.at(device).UnmapMemory(memory); }
+
     VkResult PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,
                                       const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
     void PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator);

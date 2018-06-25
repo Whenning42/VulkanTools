@@ -69,7 +69,7 @@ class ApiDumpSettings {
         }
 
         // Get the remaining settings
-        output_format = readFormatOption("lunarg_api_dump.output_format", ApiDumpFormat::Text);
+        output_format = readFormatOption("lunarg_api_dump.output_format", ApiDumpFormat::Html);
 
         show_params = readBoolOption("lunarg_api_dump.detailed", true);
         show_address = !readBoolOption("lunarg_api_dump.no_addr", false);
