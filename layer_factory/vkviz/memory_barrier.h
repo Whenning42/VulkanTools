@@ -17,7 +17,8 @@ struct ImageBarrier {
     VkImageSubresourceRange subresource_range;
 
     json Serialize() const {
-        return {{"image", image}, {"subresource", subresource_range}};
+//        return {{"image", image}, {"subresource", subresource_range}};
+        return {};
     }
 };
 
@@ -27,7 +28,8 @@ struct BufferBarrier {
     VkDeviceSize size;
 
     json Serialize() const {
-        return {{"buffer", buffer}, {"offset", offset}, {"size", size}};
+//        return {{"buffer", buffer}, {"offset", offset}, {"size", size}};
+        return {};
     }
 };
 

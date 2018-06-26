@@ -5,9 +5,13 @@
 #include <vulkan.h>
 
 enum OperationType { MAP_MEMORY, FLUSH_MAPPED_MEMORY_RANGES, INVALIDATE_MAPPED_MEMORY_RANGES, UNMAP_MEMORY };
+inline std::string OperationName(OperationType type_) {
+    std::vector<std::string> operations = {"Map memory", "Flush mapped memory ranges", "Invalidate mapped memory ranges", "Unmap memory"};
+}
 
 inline json SerializeRange(VkMappedMemoryRange range) {
-    return {{"memory", range.memory}, {"offset", range.offset}, {"size", range.size}};
+//    return {{"memory", range.memory}, {"offset", range.offset}, {"size", range.size}};
+    return {};
 }
 
 namespace Op {
@@ -17,8 +21,10 @@ struct MapMemory {
     VkDeviceSize size;
     OperationType type = OperationType::MAP_MEMORY;
 
+    std::string TypeName() const { return "Map Memory"; }
     json Serialize() const {
-        return {{"type", type}, {"memory", memory}, {"offset", offset}, {"size", size}};
+//        return {{"type", type}, {"memory", memory}, {"offset", offset}, {"size", size}};
+        return {};
     }
 };
 
@@ -26,6 +32,7 @@ struct FlushMappedMemoryRanges {
     std::vector<VkMappedMemoryRange> memory_ranges;
     OperationType type = OperationType::FLUSH_MAPPED_MEMORY_RANGES;
 
+    std::string TypeName() const { return "Flush Mapped Memory Ranges"; }
     json Serialize() const {
         json serialized = {{"type", type}};
         for (const auto& range : memory_ranges) {
@@ -38,6 +45,7 @@ struct InvalidateMappedMemoryRanges {
     std::vector<VkMappedMemoryRange> memory_ranges;
     OperationType type = OperationType::INVALIDATE_MAPPED_MEMORY_RANGES;
 
+    std::string TypeName() const { return "Invalidate Mapped Memory Ranges"; }
     json Serialize() const {
         json serialized = {{"type", type}};
         for (const auto& range : memory_ranges) {
@@ -50,27 +58,53 @@ struct UnmapMemory {
     VkDeviceMemory memory;
     OperationType type = OperationType::UNMAP_MEMORY;
 
+    std::string TypeName() const { return "Unmap Memory"; }
     json Serialize() const {
-        json serialized = {{"type", type}, {"memory", memory}};
+        //json serialized = {{"type", type}, {"memory", memory}};
+        return {};
     }
 };
 }  // namespace Op
 
-class Operation : public Serializable {
-   public:
+class Operation {
+  protected:
+    struct concept {
+        virtual ~concept() {}
+        virtual std::string TypeName() const = 0;
+    };
+
     template <typename T>
-    Operation(T&& impl) : Serializable(impl) {
-        // static_assert(std::is_base_of<Op::BasicOperation, T>::value, "Operations need to be instances of the BasicOperation
-        // class");
-    }
+    struct model : public concept {
+        static_assert(!std::is_const<T>::value, "Cannot create a serilizable object from a const one");
+        model() = default;
+        model(const T& other) : data_(other) {}
+        model(T&& other) : data_(std::move(other)) {}
+
+        std::string TypeName() const override { return data_.TypeName(); }
+
+        T data_;
+    };
+
+   public:
+    Operation(const Operation&) = delete;
+    Operation(Operation&&) = default;
+
+    Operation& operator=(const Operation&) = delete;
+    Operation& operator=(Operation&&) = default;
+
+    template <typename T>
+    Operation(T&& impl) : impl_(new model<std::decay_t<T>>(std::forward<T>(impl))) {}
 
     template <typename T>
     Operation& operator=(T&& impl) {
-        *this = Serializable(impl);
-        // static_assert(std::is_base_of<Op::BasicOperation, T>::value, "Operations need to be instances of the BasicOperation
-        // class");
+        impl_.reset(new model<std::decay_t<T>>(std::forward<T>(impl)));
         return *this;
     }
+
+    std::string TypeName() const { return impl_->TypeName(); }
+
+   protected:
+    std::unique_ptr<concept> impl_;
 };
 
 struct VkVizMemoryRegion {

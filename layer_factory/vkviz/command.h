@@ -20,25 +20,54 @@ struct BasicCommand {
     CMD_TYPE type_ = CMD_NONE;
 
     BasicCommand(CMD_TYPE type) : type_(type){};
+    std::string TypeString() const { return cmdToString(type_);}
     json Serialize() const {
         return {"type", cmdToString};
     }
 };
 
-// A Command stores objects inherited from BasicCommand
-class Command : public Serializable {
-   public:
+class Command {
+  protected:
+    struct concept {
+        virtual ~concept() {}
+        virtual std::string TypeString() const = 0;
+    };
+
     template <typename T>
-    Command(T&& impl) : Serializable(impl) {
+    struct model : public concept {
+        static_assert(!std::is_const<T>::value, "Cannot create a serilizable object from a const one");
+        model() = default;
+        model(const T& other) : data_(other) {}
+        model(T&& other) : data_(std::move(other)) {}
+
+        std::string TypeString() const override { return data_.TypeString(); }
+
+        T data_;
+    };
+
+   public:
+    Command(const Command&) = delete;
+    Command(Command&&) = default;
+
+    Command& operator=(const Command&) = delete;
+    Command& operator=(Command&&) = default;
+
+    template <typename T>
+    Command(T&& impl): impl_(new model<std::decay_t<T>>(std::forward<T>(impl))) {
         static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
     }
 
     template <typename T>
     Command& operator=(T&& impl) {
-        *this = Loggable(impl);
+        impl_.reset(new model<std::decay_t<T>>(std::forward<T>(impl)));
         static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
         return *this;
     }
+
+    std::string TypeString() const { return impl_->TypeString(); }
+
+   protected:
+    std::unique_ptr<concept> impl_;
 };
 
 struct Access : public BasicCommand {
@@ -47,6 +76,7 @@ struct Access : public BasicCommand {
     Access(CMD_TYPE type, MemoryAccess access) : BasicCommand(type), accesses_({access}){};
     Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : BasicCommand(type), accesses_(accesses){};
 
+    std::string TypeString() const { return cmdToString(type_) + " + causes one or more acesses.";}
     json Serialize() const {
         json serialized = BasicCommand::Serialize();
         for (const auto& access : accesses_) {
@@ -74,9 +104,10 @@ struct VertexBufferBind : BasicCommand {
     VertexBufferBind(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) : BasicCommand(type), vertex_buffers_(vertex_buffers){};
 
     json Serialize() const {
-        json serialized = BasicCommand::Serialize();
-        serialized["Vertex buffers"] = vertex_buffers_;
-        return serialized;
+        //json serialized = BasicCommand::Serialize();
+        //serialized["Vertex buffers"] = vertex_buffers_;
+        //return serialized;
+        return {};
     }
 };
 

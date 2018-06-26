@@ -104,15 +104,9 @@ class VkVizCommandBuffer {
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
    public:
-    void LogCommands(std::ofstream& out_file) {
-        out_file << "Submitted command buffer: " << buffer_ << std::endl;
-        for(const auto& command : commands_) {
-            Log(command, out_file);
-        }
-        out_file << std::endl;
-    }
 
     VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : buffer_(commandBuffer), level_(level) {}
+    const std::vector<Command>& Commands() const { return commands_; }
 
     // These three functions aren't of the form vkCmd*.
     VkResult Begin();

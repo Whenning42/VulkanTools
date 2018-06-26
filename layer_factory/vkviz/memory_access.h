@@ -199,7 +199,8 @@ struct MemoryAccess {
             handle = access.buffer;
         }
 
-        return {{"type", memoryTypeString(type)}, {"read or write", readWriteString(read_or_write)}, {"handle", handle}};
+        //return {{"type", memoryTypeString(type)}, {"read or write", readWriteString(read_or_write)}, {"handle", handle}};
+        return {};
     }
 };
 
