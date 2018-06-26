@@ -1,8 +1,14 @@
+#include "serialize.h"
+
 #include <unordered_map>
 #include <cassert>
 #include <vulkan.h>
 
 enum OperationType { MAP_MEMORY, FLUSH_MAPPED_MEMORY_RANGES, INVALIDATE_MAPPED_MEMORY_RANGES, UNMAP_MEMORY };
+
+inline json SerializeRange(VkMappedMemoryRange range) {
+    return {{"memory", range.memory}, {"offset", range.offset}, {"size", range.size}};
+}
 
 namespace Op {
 struct MapMemory {
@@ -10,60 +16,57 @@ struct MapMemory {
     VkDeviceSize offset;
     VkDeviceSize size;
     OperationType type = OperationType::MAP_MEMORY;
+
+    json Serialize() const {
+        return {{"type", type}, {"memory", memory}, {"offset", offset}, {"size", size}};
+    }
 };
 
 struct FlushMappedMemoryRanges {
     std::vector<VkMappedMemoryRange> memory_ranges;
     OperationType type = OperationType::FLUSH_MAPPED_MEMORY_RANGES;
+
+    json Serialize() const {
+        json serialized = {{"type", type}};
+        for (const auto& range : memory_ranges) {
+            serialized["memory ranges"].push_back(SerializeRange(range));
+        }
+    }
 };
 
 struct InvalidateMappedMemoryRanges {
     std::vector<VkMappedMemoryRange> memory_ranges;
     OperationType type = OperationType::INVALIDATE_MAPPED_MEMORY_RANGES;
+
+    json Serialize() const {
+        json serialized = {{"type", type}};
+        for (const auto& range : memory_ranges) {
+            serialized["memory ranges"].push_back(SerializeRange(range));
+        }
+    }
 };
 
 struct UnmapMemory {
     VkDeviceMemory memory;
     OperationType type = OperationType::UNMAP_MEMORY;
+
+    json Serialize() const {
+        json serialized = {{"type", type}, {"memory", memory}};
+    }
 };
 }  // namespace Op
 
-void Log(Op::MapMemory map, Logger& log) {
-    log << "  Map memory" << std::endl;
-    log << "    Memory: " << map.memory;
-    log << "    Offset: " << map.offset << ", Size: " << map.size << std::endl;
-}
-
-void Log(Op::FlushMappedMemoryRanges flush, Logger& log) {
-    log << "  Flush memory ranges" << std::endl;
-    for (const auto& range : flush.memory_ranges) {
-        log << "    Memory: " << range.memory;
-        log << "    Offset: " << range.offset << ", Size: " << range.size << std::endl;
-    }
-}
-
-void Log(Op::InvalidateMappedMemoryRanges invalidate, Logger& log) {
-    log << "  Invalidate memory ranges" << std::endl;
-    for (const auto& range : invalidate.memory_ranges) {
-        log << "    Memory: " << range.memory;
-        log << "    Offset: " << range.offset << ", Size: " << range.size << std::endl;
-    }
-}
-
-void Log(Op::UnmapMemory unmap, Logger& log) { log << "  Unmap memory: " << unmap.memory; }
-
-// A Operation stores objects inherited from BasicOperation
-class Operation : public Loggable {
+class Operation : public Serializable {
    public:
     template <typename T>
-    Operation(T&& impl) : Loggable(impl) {
+    Operation(T&& impl) : Serializable(impl) {
         // static_assert(std::is_base_of<Op::BasicOperation, T>::value, "Operations need to be instances of the BasicOperation
         // class");
     }
 
     template <typename T>
     Operation& operator=(T&& impl) {
-        *this = Loggable(impl);
+        *this = Serializable(impl);
         // static_assert(std::is_base_of<Op::BasicOperation, T>::value, "Operations need to be instances of the BasicOperation
         // class");
         return *this;

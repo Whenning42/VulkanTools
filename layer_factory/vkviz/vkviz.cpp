@@ -33,7 +33,7 @@ void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, 
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).LogCommands(out_file_);
+            out_file_ << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).Serialize().dump();
         }
     }
 }

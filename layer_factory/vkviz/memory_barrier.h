@@ -8,15 +8,16 @@
 
 #include "device.h"
 
+#include "third_party/json.hpp"
+
+using json = nlohmann::json;
+
 struct ImageBarrier {
-    VkImage image_;
-    VkImageSubresourceRange subresource_range_;
+    VkImage image;
+    VkImageSubresourceRange subresource_range;
 
-    ImageBarrier(VkImage image, VkImageSubresourceRange subresource_range) : image_(image), subresource_range_(subresource_range) {}
-
-    void Log(std::ofstream& out_file) const {
-        out_file << "    Is an image barrier" << std::endl;
-        out_file << "    Image handle: " << image_ << std::endl;
+    json Serialize() const {
+        return {{"image", image}, {"subresource", subresource_range}};
     }
 };
 
@@ -25,13 +26,8 @@ struct BufferBarrier {
     VkDeviceSize offset;
     VkDeviceSize size;
 
-    BufferBarrier(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) : buffer(buffer), offset(offset), size(size) {}
-
-    void Log(std::ofstream& out_file) const {
-        out_file << "    Is a buffer barrier" << std::endl;
-        out_file << "    Buffer handle: " << buffer << std::endl;
-        out_file << "    Starting at offset: " << offset << std::endl;
-        out_file << "    Of size: " << size << std::endl;
+    json Serialize() const {
+        return {{"buffer", buffer}, {"offset", offset}, {"size", size}};
     }
 };
 
@@ -45,34 +41,17 @@ struct MemoryBarrier {
         const ImageBarrier image_barrier;
     };
 
-    void Log(std::ofstream& out_file) const {
-        out_file << "  Memory barrier" << std::endl;
-        out_file << "    Source access mask: " << std::hex << std::showbase << src_access_mask << std::endl;
-        out_file << "    Destination access mask: " << std::hex << std::showbase << dst_access_mask << std::endl;
+    json Serialize() const {
+        json serialized = {{"source access mask", src_access_mask}, {"destination access mask", dst_access_mask}};
 
         if (barrier_type == BUFFER) {
-            image_barrier.Log(out_file);
+            serialized["buffer barrier"] = buffer_barrier.Serialize();
         } else if (barrier_type == IMAGE) {
-            buffer_barrier.Log(out_file);
+            serialized["image barrier"] = image_barrier.Serialize();
         }
+        return serialized;
     }
 
-   private:
-    // These constructors are private to force the use of the more explicit static create functions below
-    MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask)
-        : src_access_mask(srcAccessMask), dst_access_mask(dstAccessMask), barrier_type(BarrierType::GLOBAL){};
-    MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size)
-        : src_access_mask(srcAccessMask),
-          dst_access_mask(dstAccessMask),
-          barrier_type(BarrierType::BUFFER),
-          buffer_barrier(buffer, offset, size){};
-    MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImage image, VkImageSubresourceRange subresourceRange)
-        : src_access_mask(srcAccessMask),
-          dst_access_mask(dstAccessMask),
-          barrier_type(BarrierType::IMAGE),
-          image_barrier(image, subresourceRange){};
-
-   public:
     static MemoryBarrier Global(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask) {
         return MemoryBarrier(srcAccessMask, dstAccessMask);
     }
@@ -86,6 +65,23 @@ struct MemoryBarrier {
                                VkImageSubresourceRange subresourceRange) {
         return MemoryBarrier(srcAccessMask, dstAccessMask, image, subresourceRange);
     }
+
+   private:
+    // These constructors are private to force the use of the more explicit static create functions above
+    MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask)
+        : src_access_mask(srcAccessMask), dst_access_mask(dstAccessMask), barrier_type(BarrierType::GLOBAL){};
+    MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size)
+        : src_access_mask(srcAccessMask),
+          dst_access_mask(dstAccessMask),
+          barrier_type(BarrierType::BUFFER),
+          buffer_barrier({buffer, offset, size}) {};
+    MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImage image, VkImageSubresourceRange subresourceRange)
+        : src_access_mask(srcAccessMask),
+          dst_access_mask(dstAccessMask),
+          barrier_type(BarrierType::IMAGE),
+          image_barrier({image, subresourceRange}) {};
+
+   public:
 };
 
 struct VkVizPipelineBarrier {
@@ -100,6 +96,13 @@ struct VkVizPipelineBarrier {
           dst_stage_mask(dstStageMask),
           dependency_flags(dependencyFlags),
           memory_barriers(barriers) {}
+
+    json Serialize() const {
+        json serialized = {{"source stage mask", src_stage_mask}, {"destination stage mask", dst_stage_mask}, {"dependency flags", dependency_flags}};
+        for (const auto& barrier : memory_barriers) {
+            serialized["Memory barriers"].push_back(barrier.Serialize());
+        }
+    }
 };
 
 #endif  // MEMORY_BARRIER_H

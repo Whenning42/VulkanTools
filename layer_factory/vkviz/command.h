@@ -8,9 +8,11 @@
 #include <vector>
 
 #include "command_enums.h"
-#include "loggable.h"
+#include "serialize.h"
 #include "memory_barrier.h"
 #include "memory_access.h"
+
+using json = nlohmann::json;
 
 class VkVizPipelineBarrier;
 
@@ -18,13 +20,16 @@ struct BasicCommand {
     CMD_TYPE type_ = CMD_NONE;
 
     BasicCommand(CMD_TYPE type) : type_(type){};
+    json Serialize() const {
+        return {"type", cmdToString};
+    }
 };
 
 // A Command stores objects inherited from BasicCommand
-class Command : public Loggable {
+class Command : public Serializable {
    public:
     template <typename T>
-    Command(T&& impl) : Loggable(impl) {
+    Command(T&& impl) : Serializable(impl) {
         static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
     }
 
@@ -41,59 +46,50 @@ struct Access : public BasicCommand {
 
     Access(CMD_TYPE type, MemoryAccess access) : BasicCommand(type), accesses_({access}){};
     Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : BasicCommand(type), accesses_(accesses){};
+
+    json Serialize() const {
+        json serialized = BasicCommand::Serialize();
+        for (const auto& access : accesses_) {
+            serialized["Memory accesses"].push_back(access.Serialize());
+        }
+        return serialized;
+    }
 };
 
 struct IndexBufferBind : BasicCommand {
     VkBuffer index_buffer_ = nullptr;
 
     IndexBufferBind(CMD_TYPE type, VkBuffer index_buffer) : BasicCommand(type), index_buffer_(index_buffer){};
+
+    json Serialize() const {
+        json serialized = BasicCommand::Serialize();
+        serialized["Index buffer"] = (uint64_t)(index_buffer_);
+        return serialized;
+    }
 };
 
 struct VertexBufferBind : BasicCommand {
     std::vector<VkBuffer> vertex_buffers_;
 
     VertexBufferBind(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) : BasicCommand(type), vertex_buffers_(vertex_buffers){};
+
+    json Serialize() const {
+        json serialized = BasicCommand::Serialize();
+        serialized["Vertex buffers"] = vertex_buffers_;
+        return serialized;
+    }
 };
 
 struct PipelineBarrierCommand : BasicCommand {
     VkVizPipelineBarrier barrier_;
 
     PipelineBarrierCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) : BasicCommand(type), barrier_(std::move(barrier)){};
+
+    json Serialize() const {
+        json serialized = BasicCommand::Serialize();
+        serialized["Pipeline barrier"] = barrier_.Serialize();
+    }
 };
 
-inline void Log(const BasicCommand& cmd, Logger& logger) { logger << "Command ran: " << cmdToString(cmd.type_) << std::endl; }
-
-inline void LogBasic(const BasicCommand& cmd, Logger& logger) { Log(cmd, logger); }
-
-inline void Log(const Access& access, Logger& logger) {
-    LogBasic(access, logger);
-    for (const auto& access : access.accesses_) {
-        access.Log(logger);
-    }
-}
-
-inline void Log(const IndexBufferBind& bind_cmd, Logger& logger) {
-    LogBasic(bind_cmd, logger);
-    logger << "  Bound index buffer: " << bind_cmd.index_buffer_ << std::endl;
-}
-
-inline void Log(const VertexBufferBind& bind_cmd, Logger& logger) {
-    LogBasic(bind_cmd, logger);
-    logger << "  Bound vertex buffers:" << std::endl;
-    for (const auto& buffer : bind_cmd.vertex_buffers_) {
-        logger << "    " << buffer << std::endl;
-    }
-}
-
-inline void Log(const PipelineBarrierCommand& barrier_cmd, Logger& logger) {
-    LogBasic(barrier_cmd, logger);
-    auto& barrier_ = barrier_cmd.barrier_;
-    logger << "  Pipeline barrier" << std::endl;
-    logger << "  Source stage mask: " << std::hex << std::showbase << barrier_.src_stage_mask << std::endl;
-    logger << "  Destination stage mask: " << std::hex << std::showbase << barrier_.dst_stage_mask << std::endl;
-    for (const auto& memory_barrier : barrier_.memory_barriers) {
-        memory_barrier.Log(logger);
-    }
-}
 
 #endif  // COMMAND_H

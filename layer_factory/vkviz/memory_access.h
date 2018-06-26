@@ -2,8 +2,16 @@
 #define MEMORY_ACCESS_H
 
 #include <string>
+#include <vector>
+#include <cassert>
 #include <algorithm>
 #include <vulkan.h>
+#include <fstream>
+
+#include "third_party/json.hpp"
+#include "command_enums.h"
+
+using json = nlohmann::json;
 
 class VkVizImage {
     VkImage image_;
@@ -180,10 +188,7 @@ struct MemoryAccess {
         return Image(rw, image_view.Image(), regionCount, pRegions);
     }
 
-    void Log(std::ofstream& out_file) const {
-        out_file << "Memory access" << std::endl;
-        out_file << "  Is read or write: " << readWriteString(read_or_write) << std::endl;
-        out_file << "  Of resource: " << memoryTypeString(type) << std::endl;
+    json Serialize() const {
         void* handle;
         if (type == IMAGE_MEMORY) {
             ImageAccess access = *(ImageAccess*)data;
@@ -193,7 +198,8 @@ struct MemoryAccess {
             BufferAccess access = *(BufferAccess*)data;
             handle = access.buffer;
         }
-        out_file << "  With handle: " << handle << std::endl;
+
+        return {{"type", memoryTypeString(type)}, {"read or write", readWriteString(read_or_write)}, {"handle", handle}};
     }
 };
 
