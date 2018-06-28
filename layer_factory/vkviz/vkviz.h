@@ -18,6 +18,23 @@
 #ifndef VkViz_H
 #define VkViz_H
 
+// Qt requires the following to be undefined but X11 defines them and is included in Vulkan.h
+// The way around this hack it to include Qt before vulkan in the layer_factor build or get
+// fixes upstreamed in Qt
+#undef Bool
+#undef CursorShape
+#undef Expose
+#undef KeyPress
+#undef KeyRelease
+#undef FocusIn
+#undef FocusOut
+#undef FontChange
+#undef None
+#undef Status
+#undef Unsorted
+#include <QApplication>
+#include "VkVizFrontend/mainwindow.h"
+
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
@@ -27,14 +44,26 @@
 #include "render_pass.h"
 #include "command_buffer.h"
 
+
 // vkCmd tracking -- complete as of header 1.0.68
 // please keep in "none, then sorted" order
 // Note: grepping vulkan.h for VKAPI_CALL.*vkCmd will return all functions except vkEndCommandBuffer, vkBeginBuffer, and vkResetBuffer
 
+
 class VkViz : public layer_factory {
+
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this), out_file_("vkviz_capture") {};
+    VkViz() : layer_factory(this), out_file_("vkviz_capture") {
+	printf("Called\n");
+        int argc = 1;
+        char arg[6] = "vkviz";
+        char *argv[1] = {arg};
+    	QApplication app(argc, argv);
+	MainWindow window;
+        window.show();
+	app.exec();
+    };
 
     // These functions are all implemented in vkviz.cpp.
 

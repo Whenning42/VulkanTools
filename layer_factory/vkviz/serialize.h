@@ -3,6 +3,9 @@
 
 #include "third_party/json.hpp"
 
+#include <type_traits>
+#include <memory>
+
 using json = nlohmann::json;
 
 // A class representing a serializable object

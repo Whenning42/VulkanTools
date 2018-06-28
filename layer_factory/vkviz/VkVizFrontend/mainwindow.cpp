@@ -1,8 +1,8 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
-
 #include <QLabel>
 #include <string>
+
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
 
 //#include "command_enums.h"
 //#include "command_buffer.h"
@@ -70,6 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    /*
     ClearBufferList();
 
     CommandBufferList cbl(ui->BufferList);
@@ -87,7 +88,7 @@ MainWindow::MainWindow(QWidget *parent) :
         cbl.AddCommand("Begin");
         cbl.AddCommand("Draw");
         cbl.AddCommand("End");
-    }
+    }*/
 }
 
 MainWindow::~MainWindow()

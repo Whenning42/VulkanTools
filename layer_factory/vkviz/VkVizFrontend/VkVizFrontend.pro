@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2018-06-27T13:34:45
+# Project created by QtCreator 2018-06-27T19:42:02
 #
 #-------------------------------------------------
 
@@ -32,3 +32,5 @@ HEADERS += \
 
 FORMS += \
         mainwindow.ui
+
+INCLUDEPATH += $$PWD/../
