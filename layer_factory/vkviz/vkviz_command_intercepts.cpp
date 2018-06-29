@@ -18,7 +18,7 @@
 #ifndef Vkviz_Command_Intercepts_H
 #define Vkviz_Command_Intercepts_H
 
-#include "vulkan/vulkan.h"
+#include "vulkan_core.h"
 #include "vkviz.h"
 
 // All of these intercepts just call the corresponding VkViz command buffer functions.

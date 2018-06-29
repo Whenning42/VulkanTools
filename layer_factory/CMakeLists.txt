@@ -115,18 +115,23 @@ else()
     file(TO_NATIVE_PATH ${JSON_DEST_PATH}/VkLayer_${target}.json dst_json)
     file(WRITE ${dst_json} ${target_json_file})
 
-    add_library(VkLayer_${target} SHARED ${ARGN})
 
     # Should probably handle this in a seperate CMakeLists
     if(${target} STREQUAL "vkviz")
 	message(STATUS "Viz path----------------------------------------------------")
+	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTOUIC ON)
+	find_package(Qt5Core REQUIRED)
 	find_package(Qt5Widgets CONFIG REQUIRED)
+
+	add_library(VkLayer_${target} SHARED ${ARGN})
 	target_link_Libraries(VkLayer_${target} VkLayer_utils Qt5::Widgets)
     else()
 	message(STATUS "Non-Viz path------------------------------------------------")
 	message(STATUS "For target: ${target}" )
+
+	add_library(VkLayer_${target} SHARED ${ARGN})
         target_link_Libraries(VkLayer_${target} VkLayer_utils)
     endif()
 
@@ -147,7 +152,8 @@ SUBDIRLIST(ST_SUBDIRS ${CMAKE_LAYER_FACTORY_SOURCE_DIR})
 # the previous layer in order to serialize their builds.
 set(dep_chain generate_vlf)
 FOREACH(subdir ${ST_SUBDIRS})
-    file(GLOB INTERCEPTOR_SOURCES ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/*.h ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/*.cpp)
+    # Hack here
+    file(GLOB INTERCEPTOR_SOURCES ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/*.h ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/*.cpp ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.h ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.cpp ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.ui)
     add_factory_layer(${subdir} ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir} layer_factory.cpp layer_factory.h ${V_LVL_ROOT_DIR}/layers/vk_layer_table.cpp ${INTERCEPTOR_SOURCES})
     add_dependencies(VkLayer_${subdir} ${dep_chain})
     set(dep_chain VkLayer_${subdir})

@@ -33,13 +33,14 @@
 #undef Status
 #undef Unsorted
 #include <QApplication>
-#include "VkVizFrontend/mainwindow.h"
+#include "mainwindow.h"
 
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
+#include <thread>
 
-#include "vulkan/vulkan.h"
+#include "vulkan_core.h"
 #include "layer_factory.h"
 #include "render_pass.h"
 #include "command_buffer.h"
@@ -51,19 +52,29 @@
 
 
 class VkViz : public layer_factory {
+    std::thread uiThread_;
+    static MainWindow* window_;
+
+    static int RunUI() {
+	int qtArgc = 1;
+	char qtArg[6] = "vkviz";
+	char *qtArgv[1] = {qtArg};
+	QApplication app(qtArgc, qtArgv);
+	MainWindow window;
+	window.show();
+	window_ = &window;
+	return app.exec();
+    }
 
    public:
     // Constructor for interceptor
     VkViz() : layer_factory(this), out_file_("vkviz_capture") {
-	printf("Called\n");
-        int argc = 1;
-        char arg[6] = "vkviz";
-        char *argv[1] = {arg};
-    	QApplication app(argc, argv);
-	MainWindow window;
-        window.show();
-	app.exec();
+	uiThread_ = std::thread(RunUI);
     };
+
+    ~VkViz() {
+	uiThread_.join();
+    }
 
     // These functions are all implemented in vkviz.cpp.
 

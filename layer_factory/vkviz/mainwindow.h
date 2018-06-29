@@ -1,13 +1,15 @@
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QtCore/QVariant>
+#include <QMainWindow>
 #include <QLabel>
+#include <QLayout>
 #include <string>
 
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include "command_buffer.h"
 
-//#include "command_enums.h"
-//#include "command_buffer.h"
-
-class CommandBufferList {
+class CommandBufferList { 
     QVBoxLayout* buffer_list_;
     QHBoxLayout* current_indent_ = nullptr;
     QVBoxLayout* command_list_ = nullptr;
@@ -45,53 +47,23 @@ public:
     }
 };
 
-void NestedDelete(QLayoutItem* to_delete) {
-    if(to_delete->layout()) {
-        QLayoutItem* item;
-        while((item = to_delete->layout()->takeAt(0)) != 0) {
-            NestedDelete(item);
-        }
-        delete to_delete;
-    }
-
-    delete to_delete->widget();
+namespace Ui {
+class MainWindow;
 }
 
-// Clears all the cmd buffer while leaving the bottom spacer
-void MainWindow::ClearBufferList() {
-    while(ui->BufferList->count() > 1) {
-        NestedDelete(ui->BufferList->takeAt(0));
-    }
-}
-
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+class MainWindow : public QMainWindow
 {
-    ui->setupUi(this);
+    Q_OBJECT
 
-    /*
-    ClearBufferList();
+public:
+    explicit MainWindow(QWidget *parent = 0);
+    ~MainWindow();
 
-    CommandBufferList cbl(ui->BufferList);
-    cbl.AddBuffer("Buffer: 0x1");
-    cbl.AddCommand("Begin");
-    cbl.AddCommand("Draw");
-    cbl.AddCommand("End");
+    void AddCommandBuffer(const VkVizCommandBuffer& buffer);
+    void ClearBufferList();
+private:
+    Ui::MainWindow *ui;
+    CommandBufferList display_list_;
+};
 
-    cbl.AddBuffer("Buffer: 0x2");
-    cbl.AddCommand("Begin");
-    cbl.AddCommand("Clear");
-
-    for(int i=0; i<12; ++i) {
-        cbl.AddBuffer("Buffer: 0x1");
-        cbl.AddCommand("Begin");
-        cbl.AddCommand("Draw");
-        cbl.AddCommand("End");
-    }*/
-}
-
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
+#endif // MAINWINDOW_H

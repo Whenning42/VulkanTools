@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-#include <vulkan.h>
+#include <vulkan_core.h>
 #include <fstream>
 
 #include "third_party/json.hpp"

@@ -1,7 +1,7 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-#include <vulkan.h>
+#include <vulkan_core.h>
 #include <type_traits>
 #include <fstream>
 #include <memory>

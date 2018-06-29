@@ -2,6 +2,8 @@
 #include "vizgen.h"
 #include <algorithm>
 
+MainWindow* VkViz::window_ = nullptr;
+
 VkResult VkViz::PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) {
     GetCommandBuffer(commandBuffer).Begin();
 }
@@ -34,9 +36,7 @@ void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, 
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            Generator generator(out_file_);
-            generator.Write(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
-            out_file_ << "<br>" << std::endl;
+            window_->AddCommandBuffer(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
         }
     }
 }

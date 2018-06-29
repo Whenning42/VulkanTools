@@ -1,7 +1,7 @@
 #ifndef MEMORY_BARRIER_H
 #define MEMORY_BARRIER_H
 
-#include <vulkan.h>
+#include <vulkan_core.h>
 #include <fstream>
 #include <memory>
 #include <vector>

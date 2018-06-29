@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 #include <cassert>
-#include <vulkan.h>
+#include <vulkan_core.h>
 
 enum OperationType { MAP_MEMORY, FLUSH_MAPPED_MEMORY_RANGES, INVALIDATE_MAPPED_MEMORY_RANGES, UNMAP_MEMORY };
 inline std::string OperationName(OperationType type_) {

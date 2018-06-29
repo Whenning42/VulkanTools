@@ -7,7 +7,7 @@
 
 #include <cassert>
 #include <vector>
-#include <vulkan.h>
+#include <vulkan_core.h>
 #include <unordered_map>
 #include <fstream>
 #include <memory>
@@ -97,7 +97,7 @@ class VkVizRenderPassInstance {
 
 class VkVizCommandBuffer {
     std::vector<Command> commands_;
-    VkCommandBuffer buffer_;
+    VkCommandBuffer handle_;
     VkCommandBufferLevel level_;
 
     int current_render_pass_ = -1;
@@ -105,8 +105,10 @@ class VkVizCommandBuffer {
 
    public:
 
-    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : buffer_(commandBuffer), level_(level) {}
+    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : handle_(commandBuffer), level_(level) {}
+
     const std::vector<Command>& Commands() const { return commands_; }
+    VkCommandBuffer Handle() const { return handle_; }
 
     // These three functions aren't of the form vkCmd*.
     VkResult Begin();
