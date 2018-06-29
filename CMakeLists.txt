@@ -94,11 +94,11 @@ include_directories(${V_LVL_ROOT_DIR}/include)
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows" OR
     CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
-    option(BUILD_TESTS "Build tests" ON)
-    option(BUILD_LAYERSVT "Build layersvt" ON)
+    option(BUILD_TESTS "Build tests" OFF)
+    option(BUILD_LAYERSVT "Build layersvt" OFF)
     option(BUILD_VLF "Build layer_factory" ON)
-    option(BUILD_VKTRACE "Build VkTrace" ON)
-    option(BUILD_VIA "Build via" ON)
+    option(BUILD_VKTRACE "Build VkTrace" OFF)
+    option(BUILD_VIA "Build via" OFF)
 
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT (BUILD_WSI_XCB_SUPPORT OR BUILD_WSI_WAYLAND_SUPPORT))
         option(BUILD_VKTRACE_REPLAY "Build VkReplay" OFF)
