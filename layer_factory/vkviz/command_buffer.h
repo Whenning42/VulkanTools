@@ -10,6 +10,7 @@
 #include <vulkan_core.h>
 #include <unordered_map>
 #include <fstream>
+#include <sstream>
 #include <memory>
 
 
@@ -96,12 +97,14 @@ class VkVizRenderPassInstance {
 };
 
 class VkVizCommandBuffer {
-    std::vector<Command> commands_;
     VkCommandBuffer handle_;
     VkCommandBufferLevel level_;
+    std::vector<Command> commands_;
 
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
+
+    VkVizCommandBuffer(VkCommandBuffer handle, std::vector<Command> commands) : handle_(handle), commands_(commands) {};
 
    public:
 
@@ -109,13 +112,25 @@ class VkVizCommandBuffer {
 
     const std::vector<Command>& Commands() const { return commands_; }
     VkCommandBuffer Handle() const { return handle_; }
+    std::string Name() const {
+        std::stringstream s;
+        s << handle_;
+        return s.str();
+    }
 
     json to_json() const {
-        json serialized = {{"Command buffer handle", reinterpret_cast<uintptr_t>(handle_)}};
+        json serialized = {{"handle", reinterpret_cast<uintptr_t>(handle_)}};
         for(const auto& command : commands_) {
-            serialized["Commands"].push_back(command.to_json());
+            serialized["commands"].push_back(command.to_json());
         }
         return serialized;
+    }
+    static VkVizCommandBuffer from_json(const json& j) {
+        std::vector<Command> commands;
+        for(int i=0; i<j["commands"].size(); ++i) {
+            commands.push_back(Command::from_json(j["commands"][i]));
+        }
+        return VkVizCommandBuffer(reinterpret_cast<VkCommandBuffer>(j["handle"].get<uintptr_t>()), commands);
     }
 
     // These three functions aren't of the form vkCmd*.

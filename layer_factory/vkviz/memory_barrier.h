@@ -49,7 +49,7 @@ struct MemoryBarrier {
     };
 
     json to_json() const {
-        json serialized = {{"src_access_mask", src_access_mask}, {"dst_access_mask", dst_access_mask}};
+        json serialized = {{"src_access_mask", src_access_mask}, {"dst_access_mask", dst_access_mask}, {"barrier_type", barrier_type}};
 
         if (barrier_type == BUFFER) {
             serialized["buffer_barrier"] = buffer_barrier.to_json();

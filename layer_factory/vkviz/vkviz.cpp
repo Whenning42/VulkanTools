@@ -1,5 +1,4 @@
 #include "vkviz.h"
-#include "vizgen.h"
 #include <algorithm>
 
 VkResult VkViz::PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) {
@@ -41,7 +40,9 @@ VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const V
             std::stringstream stream;
             json js;
             stream << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json();
+            std::string debug = stream.str();
             stream >> js;
+            VkVizCommandBuffer buf = VkVizCommandBuffer::from_json(js);
             out_file_ << js.dump(2) << std::endl << std::endl;
 
             //out_file_ << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json().dump(2) << std::endl;
@@ -50,7 +51,8 @@ VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const V
 }
 
 VkResult VkViz::PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
-    out_file_ << "Frame: " << current_frame_ << std::endl;
+    out_file_.close();
+    out_file_.open("vkviz_frame" + std::to_string(current_frame_));
     current_frame_++;
 }
 

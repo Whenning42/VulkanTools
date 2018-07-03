@@ -18,7 +18,7 @@
   background-color: rgb(255, 255, 255);
   padding: 0px;
   border: 2px solid black;
-  font: 18pt;
+  font: 16pt 'Monospace';
 }
 
 </string>
@@ -53,6 +53,13 @@
           <property name="sizeConstraint">
            <enum>QLayout::SetMinimumSize</enum>
           </property>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <spacer name="verticalSpacer">
             <property name="orientation">

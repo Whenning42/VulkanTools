@@ -63,7 +63,7 @@ void VkVizCommandBuffer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindi
 
 void VkVizCommandBuffer::BlitImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,
                                    uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) {
-    commands_.emplace_back(Access(CMD_BLITIMAGE, ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)));
+    commands_.emplace_back(Access(CMD_BLITIMAGE, {ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
 }
 
 std::vector<MemoryAccess> ClearAttachments(VkVizSubPass sub_pass, uint32_t attachment_count, const VkClearAttachment* p_attachments,
@@ -112,25 +112,25 @@ void VkVizCommandBuffer::ClearDepthStencilImage(VkImage image, VkImageLayout ima
 }
 
 void VkVizCommandBuffer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) {
-    commands_.emplace_back(Access(CMD_COPYBUFFER, BufferRead(srcBuffer, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)));
+    commands_.emplace_back(Access(CMD_COPYBUFFER, {BufferRead(srcBuffer, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)}));
 }
 
 void VkVizCommandBuffer::CopyBufferToImage(VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount,
                                            const VkBufferImageCopy* pRegions) {
     commands_.emplace_back(
-        Access(CMD_COPYBUFFERTOIMAGE, BufferRead(srcBuffer, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)));
+        Access(CMD_COPYBUFFERTOIMAGE, {BufferRead(srcBuffer, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
 }
 
 void VkVizCommandBuffer::CopyImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,
                                    uint32_t regionCount, const VkImageCopy* pRegions) {
     commands_.emplace_back(
-        Access(CMD_COPYIMAGE, ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)));
+        Access(CMD_COPYIMAGE, {ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
 }
 
 void VkVizCommandBuffer::CopyImageToBuffer(VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount,
                                            const VkBufferImageCopy* pRegions) {
     commands_.emplace_back(
-        Access(CMD_COPYIMAGETOBUFFER, ImageRead(srcImage, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)));
+        Access(CMD_COPYIMAGETOBUFFER, {ImageRead(srcImage, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)}));
 }
 
 void VkVizCommandBuffer::CopyQueryPoolResults(VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,

@@ -23,7 +23,7 @@
 #include <fstream>
 #include <thread>
 
-#include "vulkan_core.h"
+#include <vulkan_core.h>
 #include "layer_factory.h"
 #include "render_pass.h"
 #include "command_buffer.h"
@@ -38,7 +38,7 @@ class VkViz : public layer_factory {
 
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this), out_file_("vkviz_capture") {};
+    VkViz() : layer_factory(this), out_file_("vkviz_frame_start") {};
 
     // These functions are all implemented in vkviz.cpp.
 
