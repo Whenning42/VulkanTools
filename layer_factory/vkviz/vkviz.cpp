@@ -2,8 +2,6 @@
 #include "vizgen.h"
 #include <algorithm>
 
-MainWindow* VkViz::window_ = nullptr;
-
 VkResult VkViz::PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) {
     GetCommandBuffer(commandBuffer).Begin();
 }
@@ -33,10 +31,20 @@ void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, 
     RemoveRenderPass(device, renderPass);
 }
 
+#include "third_party/json.hpp"
+#include <sstream>
+using json = nlohmann::json;
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            window_->AddCommandBuffer(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
+            /* test code to check serialization/deserialization */
+            std::stringstream stream;
+            json js;
+            stream << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json();
+            stream >> js;
+            out_file_ << js.dump(2) << std::endl << std::endl;
+
+            //out_file_ << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json().dump(2) << std::endl;
         }
     }
 }

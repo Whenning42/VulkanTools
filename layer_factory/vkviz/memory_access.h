@@ -38,7 +38,6 @@ class VkVizImageView {
     VkImage Image() { return image; }
 };
 
-// TODO clean this up
 enum MEMORY_TYPE { IMAGE_MEMORY, BUFFER_MEMORY };
 std::string memoryTypeString(MEMORY_TYPE type);
 
@@ -104,11 +103,34 @@ struct ImageRegion {
         subresource = subresource_range;
         entire_image = true;
     }
+
+    json to_json() const {
+        return {{"Image region description", "Region serialization not yet implemented."}};
+    }
+    static ImageRegion from_json(const json& j) {
+        // Deserialization is unimplemented.
+        return ImageRegion(READ, VkImageCopy{});
+    }
 };
 
 struct ImageAccess {
     VkImage image;
     std::vector<ImageRegion> regions;
+
+    json to_json() const {
+        json serialized = {{"image", reinterpret_cast<uintptr_t>(image)}};
+        for (const auto& region : regions) {
+            serialized["regions"].push_back(region.to_json());
+        }
+        return serialized;
+    }
+    static ImageAccess from_json(const json& j) {
+        std::vector<ImageRegion> regions;
+        for(int i=0; i<j["regions"].size(); ++i) {
+            regions.push_back(ImageRegion::from_json(j["regions"][i]));
+        }
+        return ImageAccess{reinterpret_cast<VkImage>(j["image"].get<uintptr_t>()), std::move(regions)};
+    }
 };
 
 struct BufferRegion {
@@ -133,11 +155,34 @@ struct BufferRegion {
         row_length = copy.bufferRowLength;
         image_height = copy.bufferImageHeight;
     }
+
+    json to_json() const {
+        return {{"Buffer region description", "Buffer serialization not yet implemented."}};
+    }
+    static BufferRegion from_json(const json& j) {
+        // Deserialization is unimplemented.
+        return BufferRegion(READ, VkBufferCopy{});
+    }
 };
 
 struct BufferAccess {
     VkBuffer buffer;
     std::vector<BufferRegion> regions;
+
+    json to_json() const {
+        json serialized = {{"buffer", reinterpret_cast<uintptr_t>(buffer)}};
+        for (const auto& region : regions) {
+            serialized["regions"].push_back(region.to_json());
+        }
+        return serialized;
+    }
+    static BufferAccess from_json(const json& j) {
+        std::vector<BufferRegion> regions;
+        for(int i=0; i<j["regions"].size(); ++i) {
+            regions.push_back(BufferRegion::from_json(j["regions"][i]));
+        }
+        return BufferAccess{reinterpret_cast<VkBuffer>(j["buffer"].get<uintptr_t>()), std::move(regions)};
+    }
 };
 
 struct MemoryAccess {
@@ -145,40 +190,43 @@ struct MemoryAccess {
     MEMORY_TYPE type;
     void* data;
 
+    MemoryAccess(const MemoryAccess& other): read_or_write(other.read_or_write), type(other.type) {
+        if(type == IMAGE_MEMORY) {
+            data = new ImageAccess(*static_cast<ImageAccess*>(other.data));
+        } else {
+            assert(type == BUFFER_MEMORY);
+            data = new BufferAccess(*static_cast<BufferAccess*>(other.data));
+        }
+    }
+
+    MemoryAccess(MemoryAccess&& other): read_or_write(other.read_or_write), type(other.type), data(other.data) {
+        other.data = nullptr;
+    }
+
+    // Takes ownership of the passed in data pointer.
+    MemoryAccess(READ_WRITE rw, MEMORY_TYPE type, void* access_data): read_or_write(rw), type(type), data(access_data) {}
+
     template <typename T>
     static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions) {
-        MemoryAccess access;
-        access.type = IMAGE_MEMORY;
-        access.read_or_write = rw;
-
         std::vector<ImageRegion> regions;
-        std::transform(pRegions, pRegions + regionCount, std::back_inserter(regions),
-                       [rw](const T& region) { return ImageRegion(rw, region); });
-
-        access.data = new ImageAccess({image, regions});
-        return access;
+        for(uint32_t i=0; i<regionCount; ++i) {
+            regions.push_back(ImageRegion(rw, pRegions[i]));
+        }
+        return MemoryAccess(rw, IMAGE_MEMORY, new ImageAccess({image, std::move(regions)}));
     }
 
     template <typename T>
     static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
-        MemoryAccess access;
-        access.type = BUFFER_MEMORY;
-        access.read_or_write = rw;
-
         std::vector<BufferRegion> regions;
-        std::transform(pRegions, pRegions + regionCount, std::back_inserter(regions),
-                       [rw](const T& region) { return BufferRegion(rw, region); });
+        for(uint32_t i=0; i<regionCount; ++i) {
+            regions.push_back(BufferRegion(rw, pRegions[i]));
+        }
 
-        access.data = new BufferAccess({buffer, regions});
-        return access;
+        return MemoryAccess(rw, BUFFER_MEMORY, new BufferAccess{buffer, std::move(regions)});
     }
 
     static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
-        MemoryAccess access;
-        access.type = BUFFER_MEMORY;
-        access.read_or_write = rw;
-        access.data = new BufferAccess({buffer, {BufferRegion(offset, size)}});
-        return access;
+        return MemoryAccess(rw, BUFFER_MEMORY, new BufferAccess{buffer, {BufferRegion(offset, size)}});
     }
 
     template <typename T>
@@ -188,44 +236,41 @@ struct MemoryAccess {
         return Image(rw, image_view.Image(), regionCount, pRegions);
     }
 
-    json Serialize() const {
+    ~MemoryAccess() {
+        if (type == IMAGE_MEMORY) {
+            delete static_cast<ImageAccess*>(data);
+        } else if (type == BUFFER_MEMORY) {
+            delete static_cast<BufferAccess*>(data);
+        }
+    }
+
+    json to_json() const {
+        json serialized = {{"type", type}, {"read_or_write", read_or_write}};
+
         void* handle;
         if (type == IMAGE_MEMORY) {
             ImageAccess access = *(ImageAccess*)data;
-            handle = access.image;
+            serialized["access"] = access.to_json();
         }
         if (type == BUFFER_MEMORY) {
             BufferAccess access = *(BufferAccess*)data;
-            handle = access.buffer;
+            serialized["access"] = access.to_json();
         }
 
-        //return {{"type", memoryTypeString(type)}, {"read or write", readWriteString(read_or_write)}, {"handle", handle}};
-        return {};
+        return serialized;
+    }
+
+    static MemoryAccess from_json(const json& j) {
+        void* access;
+        MEMORY_TYPE access_type = j["type"].get<MEMORY_TYPE>();
+        if (access_type == IMAGE_MEMORY) {
+            access = new ImageAccess(ImageAccess::from_json(j["access"]));
+        } else if (access_type == BUFFER_MEMORY) {
+            access = new BufferAccess(BufferAccess::from_json(j["access"]));
+        }
+        return MemoryAccess(j["read_or_write"].get<READ_WRITE>(), access_type, access);
     }
 };
-
-inline void AddAccess(VkCommandBuffer cmdBuffer, MemoryAccess access, CMD_TYPE type) {
-    printf("Memory access in cmd buffer: %d.\n", cmdBuffer);
-    printf("For command: %s.\n", cmdToString(type).c_str());
-    switch (access.read_or_write) {
-        case READ:
-            printf("Was a read.\n");
-        case WRITE:
-            printf("Was a write.\n");
-    }
-
-    switch (access.type) {
-        case IMAGE_MEMORY: {
-            ImageAccess data = *(ImageAccess*)access.data;
-            printf("Of image: %d.\n", data.image);
-        }
-        case BUFFER_MEMORY: {
-            BufferAccess data = *(BufferAccess*)access.data;
-            printf("Of buffer: %d.\n", data.buffer);
-        }
-    }
-    return;
-}
 
 template <typename T>
 inline MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {

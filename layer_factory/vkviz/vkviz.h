@@ -18,23 +18,6 @@
 #ifndef VkViz_H
 #define VkViz_H
 
-// Qt requires the following to be undefined but X11 defines them and is included in Vulkan.h
-// The way around this hack it to include Qt before vulkan in the layer_factor build or get
-// fixes upstreamed in Qt
-#undef Bool
-#undef CursorShape
-#undef Expose
-#undef KeyPress
-#undef KeyRelease
-#undef FocusIn
-#undef FocusOut
-#undef FontChange
-#undef None
-#undef Status
-#undef Unsorted
-#include <QApplication>
-#include "mainwindow.h"
-
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
@@ -52,29 +35,10 @@
 
 
 class VkViz : public layer_factory {
-    std::thread uiThread_;
-    static MainWindow* window_;
-
-    static int RunUI() {
-	int qtArgc = 1;
-	char qtArg[6] = "vkviz";
-	char *qtArgv[1] = {qtArg};
-	QApplication app(qtArgc, qtArgv);
-	MainWindow window;
-	window.show();
-	window_ = &window;
-	return app.exec();
-    }
 
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this), out_file_("vkviz_capture") {
-	uiThread_ = std::thread(RunUI);
-    };
-
-    ~VkViz() {
-	uiThread_.join();
-    }
+    VkViz() : layer_factory(this), out_file_("vkviz_capture") {};
 
     // These functions are all implemented in vkviz.cpp.
 

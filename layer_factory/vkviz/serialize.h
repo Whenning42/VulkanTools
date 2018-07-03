@@ -53,4 +53,6 @@ class Serializable {
     std::unique_ptr<concept> impl_;
 };
 
+
+
 #endif  // SERIALIZE_H

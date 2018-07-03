@@ -26,7 +26,7 @@ void MainWindow::ClearBufferList() {
 void MainWindow::AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
     display_list_.AddBuffer(std::to_string((uint64_t)command_buffer.Handle()));
     for(const auto& command : command_buffer.Commands()) {
-	display_list_.AddCommand(command.TypeString());
+        display_list_.AddCommand(command.TypeString());
     }
 }
 
@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     display_list_(ui->BufferList)
 {
     ui->setupUi(this);
+    display_list_ = CommandBufferList(ui->BufferList);
     ClearBufferList();
 
     /*

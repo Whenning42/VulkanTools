@@ -110,6 +110,14 @@ class VkVizCommandBuffer {
     const std::vector<Command>& Commands() const { return commands_; }
     VkCommandBuffer Handle() const { return handle_; }
 
+    json to_json() const {
+        json serialized = {{"Command buffer handle", reinterpret_cast<uintptr_t>(handle_)}};
+        for(const auto& command : commands_) {
+            serialized["Commands"].push_back(command.to_json());
+        }
+        return serialized;
+    }
+
     // These three functions aren't of the form vkCmd*.
     VkResult Begin();
     VkResult End();

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <memory>
 #include <vector>
+#include <cstdint>
 
 #include "command_enums.h"
 #include "serialize.h"
@@ -21,8 +22,12 @@ struct BasicCommand {
 
     BasicCommand(CMD_TYPE type) : type_(type){};
     std::string TypeString() const { return cmdToString(type_);}
-    json Serialize() const {
-        return {"type", cmdToString};
+
+    json to_json() const {
+        return {{"type", type_}};
+    }
+    static BasicCommand from_json(const json& j) {
+        return BasicCommand(j["type"].get<CMD_TYPE>());
     }
 };
 
@@ -31,6 +36,8 @@ class Command {
     struct concept {
         virtual ~concept() {}
         virtual std::string TypeString() const = 0;
+        virtual std::unique_ptr<concept> Clone() const = 0;
+        virtual json to_json() const = 0;
     };
 
     template <typename T>
@@ -41,30 +48,44 @@ class Command {
         model(T&& other) : data_(std::move(other)) {}
 
         std::string TypeString() const override { return data_.TypeString(); }
+        std::unique_ptr<concept> Clone() const override {
+            return std::unique_ptr<model>(new model(*this));
+        }
+
+        json to_json() const override { return data_.to_json(); }
+        static model from_json(const json& j) { return T::from_json(j); }
 
         T data_;
     };
 
    public:
-    Command(const Command&) = delete;
+    Command(const Command& other) : impl_(other.impl_->Clone()) {}
     Command(Command&&) = default;
 
-    Command& operator=(const Command&) = delete;
     Command& operator=(Command&&) = default;
+    Command& operator=(const Command& c) {
+        impl_ = c.impl_->Clone();
+        return *this;
+    }
 
     template <typename T>
     Command(T&& impl): impl_(new model<std::decay_t<T>>(std::forward<T>(impl))) {
-        static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
+        //static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
     }
 
     template <typename T>
     Command& operator=(T&& impl) {
         impl_.reset(new model<std::decay_t<T>>(std::forward<T>(impl)));
-        static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
+        //static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
         return *this;
     }
 
     std::string TypeString() const { return impl_->TypeString(); }
+
+    json to_json() const { return impl_->to_json(); }
+
+    template <typename T>
+    static Command from_json(const json& j) { return T::from_json(j); }
 
    protected:
     std::unique_ptr<concept> impl_;
@@ -73,16 +94,25 @@ class Command {
 struct Access : public BasicCommand {
     std::vector<MemoryAccess> accesses_;
 
-    Access(CMD_TYPE type, MemoryAccess access) : BasicCommand(type), accesses_({access}){};
-    Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : BasicCommand(type), accesses_(accesses){};
+
+    Access(CMD_TYPE type, MemoryAccess access) : BasicCommand(type) { accesses_.push_back(std::move(access)); };
+    Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : BasicCommand(type), accesses_(std::move(accesses)) { };
 
     std::string TypeString() const { return cmdToString(type_) + " + causes one or more acesses.";}
-    json Serialize() const {
-        json serialized = BasicCommand::Serialize();
+
+    json to_json() const {
+        json serialized = BasicCommand::to_json();
         for (const auto& access : accesses_) {
-            serialized["Memory accesses"].push_back(access.Serialize());
+            serialized["accesses"].push_back(access.to_json());
         }
         return serialized;
+    }
+    static Access from_json(const json& j) {
+        std::vector<MemoryAccess> accesses;
+        for(int i=0; i<j["accesses"].size(); ++i) {
+            accesses.push_back(MemoryAccess::from_json(j["accesses"][i]));
+        }
+        return Access(j["type"].get<CMD_TYPE>(), std::move(accesses));
     }
 };
 
@@ -91,10 +121,13 @@ struct IndexBufferBind : BasicCommand {
 
     IndexBufferBind(CMD_TYPE type, VkBuffer index_buffer) : BasicCommand(type), index_buffer_(index_buffer){};
 
-    json Serialize() const {
-        json serialized = BasicCommand::Serialize();
-        serialized["Index buffer"] = (uint64_t)(index_buffer_);
+    json to_json() const {
+        json serialized = BasicCommand::to_json();
+        serialized["index_buffer"] = reinterpret_cast<std::uintptr_t>(index_buffer_);
         return serialized;
+    }
+    static IndexBufferBind from_json(const json& j) {
+        return IndexBufferBind(j["type"].get<CMD_TYPE>(), reinterpret_cast<VkBuffer>(j["index_buffer"].get<std::uintptr_t>()));
     }
 };
 
@@ -103,11 +136,19 @@ struct VertexBufferBind : BasicCommand {
 
     VertexBufferBind(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) : BasicCommand(type), vertex_buffers_(vertex_buffers){};
 
-    json Serialize() const {
-        //json serialized = BasicCommand::Serialize();
-        //serialized["Vertex buffers"] = vertex_buffers_;
-        //return serialized;
-        return {};
+    json to_json() const {
+        json serialized = BasicCommand::to_json();
+        for (const auto& buffer : vertex_buffers_) {
+            serialized["Vertex buffers"] = reinterpret_cast<uintptr_t>(buffer);
+        }
+        return serialized;
+    }
+    static VertexBufferBind from_json(const json& j) {
+        std::vector<VkBuffer> vertex_buffers;
+        for(int i=0; i<j["vertex_buffers_"].size(); ++i) {
+            vertex_buffers.push_back(reinterpret_cast<VkBuffer>(j["vertex_buffers_"][0].get<std::uintptr_t>()));
+        }
+        return VertexBufferBind(j["type"].get<CMD_TYPE>(),  std::move(vertex_buffers));
     }
 };
 
@@ -116,9 +157,13 @@ struct PipelineBarrierCommand : BasicCommand {
 
     PipelineBarrierCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) : BasicCommand(type), barrier_(std::move(barrier)){};
 
-    json Serialize() const {
-        json serialized = BasicCommand::Serialize();
-        serialized["Pipeline barrier"] = barrier_.Serialize();
+    json to_json() const {
+        json serialized = BasicCommand::to_json();
+        serialized["barrier"] = barrier_.to_json();
+        return serialized;
+    }
+    static PipelineBarrierCommand from_json(const json& j) {
+        return PipelineBarrierCommand(j["type"].get<CMD_TYPE>(), VkVizPipelineBarrier::from_json(j["barrier"]));
     }
 };
 

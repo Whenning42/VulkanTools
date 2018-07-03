@@ -7,6 +7,7 @@
 enum OperationType { MAP_MEMORY, FLUSH_MAPPED_MEMORY_RANGES, INVALIDATE_MAPPED_MEMORY_RANGES, UNMAP_MEMORY };
 inline std::string OperationName(OperationType type_) {
     std::vector<std::string> operations = {"Map memory", "Flush mapped memory ranges", "Invalidate mapped memory ranges", "Unmap memory"};
+    return operations[type_];
 }
 
 inline json SerializeRange(VkMappedMemoryRange range) {
@@ -38,6 +39,7 @@ struct FlushMappedMemoryRanges {
         for (const auto& range : memory_ranges) {
             serialized["memory ranges"].push_back(SerializeRange(range));
         }
+        return serialized;
     }
 };
 
@@ -51,6 +53,7 @@ struct InvalidateMappedMemoryRanges {
         for (const auto& range : memory_ranges) {
             serialized["memory ranges"].push_back(SerializeRange(range));
         }
+        return serialized;
     }
 };
 
