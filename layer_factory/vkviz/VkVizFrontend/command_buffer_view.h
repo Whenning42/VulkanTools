@@ -10,6 +10,12 @@ class CommandBufferView {
     QVBoxLayout* buffer_list_;
     QHBoxLayout* current_indent_ = nullptr;
     QVBoxLayout* command_list_ = nullptr;
+    bool is_collpased_ = false;
+
+    // Checks whether this view has any Command Buffers in it.
+    bool IsEmpty() {
+        return buffer_list_->count() <= 1;
+    }
 
     // Deletes all the layouts and widgets in a given layout.
     void NestedDelete(QLayoutItem* to_delete);
@@ -27,11 +33,7 @@ public:
     void AddCommandBuffer(const VkVizCommandBuffer& command_buffer);
 
     // Clears all the command buffers from this view.
-    void Clear() {
-        while(buffer_list_->count() > 1) {
-            NestedDelete(buffer_list_->takeAt(0));
-        }
-    }
+    void Clear();
 };
 
 #endif  // COMMAND_BUFFER_VIEW_H

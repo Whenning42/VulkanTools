@@ -12,11 +12,17 @@ void CommandBufferView::NestedDelete(QLayoutItem* to_delete) {
     delete to_delete->widget();
 }
 
+void CommandBufferView::Clear() {
+    while(!IsEmpty()) {
+        NestedDelete(buffer_list_->takeAt(0));
+    }
+}
+
 void CommandBufferView::AddBuffer(std::string buffer) {
     QLayoutItem* bottom_spacer_ = buffer_list_->takeAt(buffer_list_->count() - 1);
 
-    // We might want to do this regardless of current_indent_ being nullptr.
-    if (current_indent_) {
+    // Don't add a space above the first command buffer
+    if (!IsEmpty()) {
         buffer_list_->addSpacing(10);
     }
     current_indent_ = nullptr;

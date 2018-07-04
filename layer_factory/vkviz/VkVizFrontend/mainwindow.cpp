@@ -30,8 +30,13 @@ MainWindow::MainWindow(QWidget *parent) :
     command_buffer_view_(nullptr) // Can't initialize until ui->setupUi is called.
 {
     ui->setupUi(this);
+
+    // Clear any example Command Buffers
     command_buffer_view_ = CommandBufferView(ui->BufferList);
     command_buffer_view_.Clear();
+
+    // Set the splits to be the same size
+    ui->Splitter->setSizes({INT_MAX, INT_MAX});
 
     std::vector<VkVizCommandBuffer> buffers = LoadFromFile("vkviz_frame_start");
     for(const auto& buffer : buffers) {
