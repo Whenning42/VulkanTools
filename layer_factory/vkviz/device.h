@@ -1,8 +1,13 @@
 #include "serialize.h"
+#include "shader_validation.h"
 
-#include <unordered_map>
 #include <cassert>
+#include <cstring>
+#include <unordered_map>
 #include <vulkan_core.h>
+
+// TODO remove
+#include <iostream>
 
 enum OperationType { MAP_MEMORY, FLUSH_MAPPED_MEMORY_RANGES, INVALIDATE_MAPPED_MEMORY_RANGES, UNMAP_MEMORY };
 inline std::string OperationName(OperationType type_) {
@@ -120,6 +125,8 @@ class VkVizDevice {
     std::unordered_map<VkImage, VkVizMemoryRegion> image_bindings_;
     std::unordered_map<VkBuffer, VkVizMemoryRegion> buffer_bindings_;
     std::vector<Operation> operations_;
+    std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shader_create_infos_;
+    std::vector<const uint32_t*> shader_sources_;
 
    public:
     VkVizDevice(VkDevice device) : device_(device) {}
@@ -159,4 +166,53 @@ class VkVizDevice {
     }
 
     void UnmapMemory(VkDeviceMemory memory) { operations_.push_back(Op::UnmapMemory{memory}); }
+
+    VkResult CreateShaderModule(const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule) {
+        std::cout << "Shader module create!" << std::endl;
+
+        VkShaderModuleCreateInfo shader_info;
+        shader_info.flags = pCreateInfo->flags;
+        shader_info.codeSize = pCreateInfo->codeSize;
+
+        uint32_t* copied_source = new uint32_t[pCreateInfo->codeSize/4];
+        std::memcpy(copied_source, pCreateInfo->pCode, pCreateInfo->codeSize);
+        shader_info.pCode = copied_source;
+
+        shader_create_infos_[*pShaderModule] = shader_info;
+        shader_sources_.push_back(copied_source);
+    }
+
+    void PrintShaderDescriptorUses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
+        const auto descriptor_uses = shader_module::get_descriptor_uses(shader_create_info, stage_create_info);
+        std::cout << "Looking at interface for shader: " << stage_create_info.module << std::endl;
+        for(const auto& use : descriptor_uses) {
+            descriptor_slot_t slot = use.first;
+            interface_var var = use.second;
+            std::cout << "Found descriptor" << std::endl;
+            std::cout << "Set: " << slot.first << std::endl;
+            std::cout << "Binding: " << slot.second << std::endl;
+            std::cout << "Storage Class: " << var.storage_class << std::endl;
+        }
+        std::cout << std::endl << std::endl;
+    }
+
+    VkResult CreateGraphicsPipelines(VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
+        std::cout << "Graphics pipeline create!" << std::endl;
+        for(uint32_t i=0; i<createInfoCount; ++i) {
+            const VkGraphicsPipelineCreateInfo& pipeline_create_info = pCreateInfos[i];
+            for(uint32_t j=0; j<pipeline_create_info.stageCount; ++j) {
+                const auto& stage_create_info = pipeline_create_info.pStages[j];
+                PrintShaderDescriptorUses(shader_create_infos_[stage_create_info.module], stage_create_info);
+            }
+        }
+    }
+
+    VkResult CreateComputePipelines(VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
+        std::cout << "Compute pipeline create!" << std::endl;
+        for(uint32_t i=0; i<createInfoCount; ++i) {
+            const VkComputePipelineCreateInfo& pipeline_create_info = pCreateInfos[i];
+            const auto& stage_create_info = pipeline_create_info.stage;
+            PrintShaderDescriptorUses(shader_create_infos_[stage_create_info.module], stage_create_info);
+        }
+    }
 };
