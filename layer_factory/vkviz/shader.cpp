@@ -20,7 +20,7 @@
  * Author: William Henning <whenning@google.com>
  */
 
-// This is a heavily modified version of shader_validation.cpp from the Vulkan-Validation repo
+// This file is an adapted version of Vulkan-ValidationLayers's shader_validation.cpp used by VkViz to determine which resources a shader reads and writes.
 
 #include <cinttypes>
 #include <string>
@@ -33,10 +33,7 @@
 #include "vk_layer_data.h"
 #include "vk_layer_extension_utils.h"
 #include "vk_layer_utils.h"
-//#include "core_validation.h"
-//#include "core_validation_types.h"
-#include "shader_validation.h"
-//#include "spirv-tools/libspirv.h"
+#include "shader.h"
 #include "xxhash.h"
 
 enum FORMAT_TYPE {
@@ -727,21 +724,6 @@ static std::vector<std::pair<descriptor_slot_t, interface_var>> CollectInterface
     return out;
 }
 
-static bool ValidateViConsistency(debug_report_data const *report_data, VkPipelineVertexInputStateCreateInfo const *vi) {
-    return false;
-}
-
-static bool ValidateViAgainstVsInputs(debug_report_data const *report_data, VkPipelineVertexInputStateCreateInfo const *vi,
-                                      shader_module const *vs, spirv_inst_iter entrypoint) {
-    return false;
-}
-
-/*
-static bool ValidateFsOutputsAgainstRenderPass(debug_report_data const *report_data, shader_module const *fs,
-                                               spirv_inst_iter entrypoint, PIPELINE_STATE const *pipeline, uint32_t subpass_index) {
-    return false;
-}*/
-
 // For some analyses, we need to know about all ids referenced by the static call tree of a particular entrypoint. This is
 // important for identifying the set of shader resources actually used by an entrypoint, for example.
 // Note: we only explore parts of the image which might actually contain ids we care about for the above analyses.
@@ -860,7 +842,7 @@ static std::unordered_set<uint32_t> MarkAccessibleIds(shader_module const *src, 
     return ids;
 }
 
-std::vector<std::pair<descriptor_slot_t, interface_var>> shader_module::get_descriptor_uses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
+std::vector<std::pair<descriptor_slot_t, interface_var>> get_descriptor_uses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
     VkShaderModule vk_shader_module = stage_create_info.module;
     shader_module shader_module(&shader_create_info, vk_shader_module);
     auto entrypoint = FindEntrypoint(&shader_module, stage_create_info.pName, stage_create_info.stage);
@@ -868,23 +850,6 @@ std::vector<std::pair<descriptor_slot_t, interface_var>> shader_module::get_desc
     bool has_writable_descriptor = false;
     auto accessible_ids = MarkAccessibleIds(&shader_module, entrypoint);
     return CollectInterfaceByDescriptorSlot(nullptr, &shader_module, accessible_ids, &has_writable_descriptor);
-}
-
-static bool ValidatePushConstantBlockAgainstPipeline(debug_report_data const *report_data,
-                                                     std::vector<VkPushConstantRange> const *push_constant_ranges,
-                                                     shader_module const *src, spirv_inst_iter type, VkShaderStageFlagBits stage) {
-    return false;
-}
-
-static bool ValidatePushConstantUsage(debug_report_data const *report_data,
-                                      std::vector<VkPushConstantRange> const *push_constant_ranges, shader_module const *src,
-                                      std::unordered_set<uint32_t> accessible_ids, VkShaderStageFlagBits stage) {
-    return false;
-}
-
-// Validate that data for each specialization entry is fully contained within the buffer.
-static bool ValidateSpecializationOffsets(debug_report_data const *report_data, VkPipelineShaderStageCreateInfo const *info) {
-    return false;
 }
 
 static bool DescriptorTypeMatch(shader_module const *module, uint32_t type_id, VkDescriptorType descriptor_type,
@@ -974,20 +939,6 @@ static bool DescriptorTypeMatch(shader_module const *module, uint32_t type_id, V
     }
 }
 
-static bool RequireFeature(debug_report_data const *report_data, VkBool32 feature, char const *feature_name) {
-    return false;
-}
-
-static bool RequireExtension(debug_report_data const *report_data, bool extension, char const *extension_name) {
-    return false;
-}
-
-/*
-static bool ValidateShaderCapabilities(layer_data *dev_data, shader_module const *src, VkShaderStageFlagBits stage,
-                                       bool has_writable_descriptor) {
-    return false;
-}*/
-
 /*
 // For given pipelineLayout verify that the set_layout_node at slot.first
 //  has the requested binding at slot.second and return ptr to that binding
@@ -1033,10 +984,3 @@ static void ProcessExecutionModes(shader_module const *src, spirv_inst_iter entr
 
     if (is_point_mode) pipeline->topology_at_rasterizer = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 }*/
-
-static bool ValidateInterfaceBetweenStages(debug_report_data const *report_data, shader_module const *producer,
-                                           spirv_inst_iter producer_entrypoint, shader_stage_attributes const *producer_stage,
-                                           shader_module const *consumer, spirv_inst_iter consumer_entrypoint,
-                                           shader_stage_attributes const *consumer_stage) {
-    return false;
-}

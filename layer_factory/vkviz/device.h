@@ -1,5 +1,5 @@
 #include "serialize.h"
-#include "shader_validation.h"
+#include "shader.h"
 
 #include <cassert>
 #include <cstring>
@@ -183,7 +183,7 @@ class VkVizDevice {
     }
 
     void PrintShaderDescriptorUses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
-        const auto descriptor_uses = shader_module::get_descriptor_uses(shader_create_info, stage_create_info);
+        const auto descriptor_uses = get_descriptor_uses(shader_create_info, stage_create_info);
         std::cout << "Looking at interface for shader: " << stage_create_info.module << std::endl;
         for(const auto& use : descriptor_uses) {
             descriptor_slot_t slot = use.first;

@@ -1,7 +1,7 @@
-/* Copyright (c) 2015-2017 The Khronos Group Inc.
- * Copyright (c) 2015-2017 Valve Corporation
- * Copyright (c) 2015-2017 LunarG, Inc.
- * Copyright (C) 2015-2017 Google Inc.
+/* Copyright (c) 2015-2018 The Khronos Group Inc.
+ * Copyright (c) 2015-2018 Valve Corporation
+ * Copyright (c) 2015-2018 LunarG, Inc.
+ * Copyright (C) 2015-2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
  * limitations under the License.
  *
  * Author: Chris Forbes <chrisf@ijw.co.nz>
+ * Author: William Henning <whenning@google.com>
  */
 
-// A heavily modified version of Vulkan-ValidationLayers shader_validation.h
+// This file is an adapted version of Vulkan-ValidationLayers's shader_validation.h used by VkViz to determine which resources a shader reads and writes.
 
-#ifndef VULKAN_SHADER_VALIDATION_H
-#define VULKAN_SHADER_VALIDATION_H
+#ifndef SHADER_H
+#define SHADER_H
 
 #include <cassert>
 #include <unordered_map>
@@ -124,9 +125,10 @@ struct shader_module {
         return at(it->second);
     }
 
-    static std::vector<std::pair<descriptor_slot_t, interface_var>> get_descriptor_uses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info);
 
     void BuildDefIndex();
 };
 
-#endif  // VULKAN_SHADER_VALIDATION_H
+std::vector<std::pair<descriptor_slot_t, interface_var>> get_descriptor_uses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info);
+
+#endif  // SHADER_H
