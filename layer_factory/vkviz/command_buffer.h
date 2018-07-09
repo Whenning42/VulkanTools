@@ -97,6 +97,7 @@ class VkVizRenderPassInstance {
 };
 
 class VkVizCommandBuffer {
+    const VkVizDevice& device_;
     VkCommandBuffer handle_;
     VkCommandBufferLevel level_;
     std::vector<Command> commands_;
@@ -104,11 +105,11 @@ class VkVizCommandBuffer {
     int current_render_pass_ = -1;
     std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    VkVizCommandBuffer(VkCommandBuffer handle, std::vector<Command> commands) : handle_(handle), commands_(commands) {};
+    VkVizCommandBuffer(VkCommandBuffer handle, std::vector<Command> commands, const VkVizDevice& device) : handle_(handle), commands_(commands), device_(device) {};
 
    public:
 
-    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : handle_(commandBuffer), level_(level) {}
+    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level, const VkVizDevice& device) : handle_(commandBuffer), level_(level), device_(device) {}
 
     const std::vector<Command>& Commands() const { return commands_; }
     VkCommandBuffer Handle() const { return handle_; }
@@ -125,12 +126,12 @@ class VkVizCommandBuffer {
         }
         return serialized;
     }
-    static VkVizCommandBuffer from_json(const json& j) {
+    static VkVizCommandBuffer from_json(const json& j, const VkVizDevice& device) {
         std::vector<Command> commands;
         for(int i=0; i<j["commands"].size(); ++i) {
             commands.push_back(Command::from_json(j["commands"][i]));
         }
-        return VkVizCommandBuffer(reinterpret_cast<VkCommandBuffer>(j["handle"].get<uintptr_t>()), commands);
+        return VkVizCommandBuffer(reinterpret_cast<VkCommandBuffer>(j["handle"].get<uintptr_t>()), commands, device);
     }
 
     // These three functions aren't of the form vkCmd*.

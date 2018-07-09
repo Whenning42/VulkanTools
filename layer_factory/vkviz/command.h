@@ -22,7 +22,8 @@ enum class VkVizCommandType {
     ACCESS,
     INDEX_BUFFER_BIND,
     VERTEX_BUFFER_BIND,
-    PIPELINE_BARRIER
+    PIPELINE_BARRIER,
+    BIND_DESCRIPTOR_SETS
 };
 
 struct BasicCommand {
@@ -97,14 +98,14 @@ struct VertexBufferBind : BasicCommand {
     static VertexBufferBind from_json(const json& j) {
         std::vector<VkBuffer> vertex_buffers;
         for(int i=0; i<j["vertex_buffers"].size(); ++i) {
-            vertex_buffers.push_back(reinterpret_cast<VkBuffer>(j["vertex_buffers"][0].get<std::uintptr_t>()));
+            vertex_buffers.push_back(reinterpret_cast<VkBuffer>(j["vertex_buffers"][i].get<std::uintptr_t>()));
         }
         return VertexBufferBind(j["type"].get<CMD_TYPE>(),  std::move(vertex_buffers));
     }
 };
 
 struct PipelineBarrierCommand : BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::PIPELINE_BARRIER; };
+    static const VkVizCommandType VkVizType() { return VkVizCommandType::PIPELINE_BARRIER; }
     VkVizPipelineBarrier barrier_;
 
     PipelineBarrierCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) : BasicCommand(type), barrier_(std::move(barrier)){};
@@ -116,6 +117,38 @@ struct PipelineBarrierCommand : BasicCommand {
     }
     static PipelineBarrierCommand from_json(const json& j) {
         return PipelineBarrierCommand(j["type"].get<CMD_TYPE>(), VkVizPipelineBarrier::from_json(j["barrier"]));
+    }
+};
+
+struct BindDescriptorSets : BasicCommand {
+    static const VkVizCommandType VkVizType() { return VkVizCommandType::BIND_DESCRIPTOR_SETS; }
+
+    // Currently stores all bound descriptor sets as opposed to just the changed ones. This allows deserialization to be stateless.
+    std::vector<VkVizDescriptorSet> bound_descriptor_sets_;
+
+    enum GraphicsOrCompute {GRAPHICS, COMPUTE};
+    GraphicsOrCompute bind_point;
+
+    BindDescriptorSets(CMD_TYPE type, std::vector<VkVizDescriptorSet> sets): BasicCommand(type) {
+        for(const auto& set : bound_descriptor_sets_) {
+            bound_descriptor_sets_.push_back(set.Clone());
+        }
+    }
+
+    json to_json() const {
+        json serialized = BasicCommand::to_json();
+
+        for(const auto& set : bound_descriptor_sets_) {
+            serialized["bound_descriptor_sets"].push_back(set.to_json());
+        }
+        return serialized;
+    }
+    static BindDescriptorSets from_json(const json& j) {
+        std::vector<VkVizDescriptorSet> bound_descriptor_sets;
+        for(int i=0; i<j["bound_descriptor_sets"]; ++i) {
+            bound_descriptor_sets.push_back(VkVizDescriptorSet::from_json(j["bound_descriptor_sets"][i]));
+        }
+        return BindDescriptorSets(j["type"].get<CMD_TYPE>(), std::move(bound_descriptor_sets));
     }
 };
 
@@ -191,6 +224,8 @@ class Command {
                 return VertexBufferBind::from_json(j);
             case VkVizCommandType::PIPELINE_BARRIER:
                 return PipelineBarrierCommand::from_json(j);
+            case VkVizCommandType::BIND_DESCRIPTOR_SETS:
+                return BindDescriptorSets::from_json(j);
         }
     }
 

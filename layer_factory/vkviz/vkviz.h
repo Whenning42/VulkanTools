@@ -41,7 +41,6 @@ class VkViz : public layer_factory {
     VkViz() : layer_factory(this), out_file_("vkviz_frame_start") {};
 
     // These functions are all implemented in vkviz.cpp.
-
     VkResult PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo);
     VkResult PostCallEndCommandBuffer(VkCommandBuffer commandBuffer);
     VkResult PostCallResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
@@ -57,7 +56,7 @@ class VkViz : public layer_factory {
         device_map_.emplace(*pDevice, VkVizDevice(*pDevice));
     }
 
-    // Create calls here
+    // Device create calls here
     VkResult PostCallCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
                                   VkBuffer* pBuffer) {
         buffer_map_.emplace(*pBuffer, VkVizBuffer(*pBuffer, device));
@@ -119,6 +118,9 @@ class VkViz : public layer_factory {
     //void PostCallDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator);
     // end create calls
 
+    void vkUpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) {
+        device_map_.at(device).UpdateDescriptorSets(descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
+    }
 
     // Tracks memory bindings.
     VkResult PostCallBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) {

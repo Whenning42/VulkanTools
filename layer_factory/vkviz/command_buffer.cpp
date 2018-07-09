@@ -35,12 +35,26 @@ void VkVizCommandBuffer::BeginRenderPass(const VkRenderPassBeginInfo* pRenderPas
     render_pass_instances_.emplace_back(VkVizRenderPassInstance(pRenderPassBegin));
 }
 
+std::vector<VkVizDescriptorSet> graphics_descriptor_sets_;
+std::vector<VkVizDescriptorSet> compute_descriptor_sets_;
+
 void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet,
                                             uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
                                             uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) {
-    commands_.emplace_back(BasicCommand(CMD_BINDDESCRIPTORSETS));
+    std::vector<VkVizDescriptorSet>* bound_descriptor_sets = &graphics_descriptor_sets_;
+    if(pipelineBindPoint == VK_PIPELINE_BIND_POINT_COMPUTE) {
+        bound_descriptor_sets = &compute_descriptor_sets_;
+    }
 
-    // TODO: Looks hard
+    if(firstSet + descriptorSetCount > bound_descriptor_sets->size()) {
+        bound_descriptor_sets->resize(firstSet + descriptorSetCount);
+    }
+
+    for(uint32_t i=0, set_number = firstSet; i<descriptorSetCount; ++i, ++set_number) {
+        bound_descriptor_sets[set_number] = device_.GetVkVizDescriptorSet(pDescriptorSets[i]);
+    }
+
+    commands_.emplace_back(BasicCommand(CMD_BINDDESCRIPTORSETS));
 }
 
 void VkVizCommandBuffer::BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {

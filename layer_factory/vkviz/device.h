@@ -1,4 +1,5 @@
 #include "serialize.h"
+#include "descriptor_set.h"
 #include "shader.h"
 
 #include <cassert>
@@ -124,9 +125,12 @@ class VkVizDevice {
     VkDevice device_;
     std::unordered_map<VkImage, VkVizMemoryRegion> image_bindings_;
     std::unordered_map<VkBuffer, VkVizMemoryRegion> buffer_bindings_;
-    std::vector<Operation> operations_;
-    std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shader_create_infos_;
+    std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shader_create_info_;
+    std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo> set_layout_info_;
+    std::unordered_map<VkDescriptorSet, VkVizDescriptorSet> descriptor_sets_;
     std::vector<const uint32_t*> shader_sources_;
+
+    std::vector<Operation> operations_;
 
    public:
     VkVizDevice(VkDevice device) : device_(device) {}
@@ -178,7 +182,7 @@ class VkVizDevice {
         std::memcpy(copied_source, pCreateInfo->pCode, pCreateInfo->codeSize);
         shader_info.pCode = copied_source;
 
-        shader_create_infos_[*pShaderModule] = shader_info;
+        shader_create_info_[*pShaderModule] = shader_info;
         shader_sources_.push_back(copied_source);
     }
 
@@ -202,7 +206,7 @@ class VkVizDevice {
             const VkGraphicsPipelineCreateInfo& pipeline_create_info = pCreateInfos[i];
             for(uint32_t j=0; j<pipeline_create_info.stageCount; ++j) {
                 const auto& stage_create_info = pipeline_create_info.pStages[j];
-                PrintShaderDescriptorUses(shader_create_infos_[stage_create_info.module], stage_create_info);
+                PrintShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
             }
         }
     }
@@ -212,7 +216,49 @@ class VkVizDevice {
         for(uint32_t i=0; i<createInfoCount; ++i) {
             const VkComputePipelineCreateInfo& pipeline_create_info = pCreateInfos[i];
             const auto& stage_create_info = pipeline_create_info.stage;
-            PrintShaderDescriptorUses(shader_create_infos_[stage_create_info.module], stage_create_info);
+            PrintShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
+        }
+    }
+
+    VkResult CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks*, VkDescriptorSetLayout* pSetLayout) {
+        set_layout_info_.emplace(std::make_pair(*pSetLayout, *pCreateInfo));
+    }
+
+    VkResult AllocateDescriptorSets(const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) {
+        const VkDescriptorSetAllocateInfo& allocate_info = *pAllocateInfo;
+        for(uint32_t i=0; i<allocate_info.descriptorSetCount; ++i) {
+            const VkDescriptorSet handle = pDescriptorSets[i];
+            const VkDescriptorSetLayoutCreateInfo& layout_create_info = set_layout_info_[allocate_info.pSetLayouts[i]];
+            descriptor_sets_.emplace(std::make_pair(handle, VkVizDescriptorSet(&layout_create_info, handle)));
+        }
+    }
+
+    void UpdateDescriptorSets(uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) {
+        // Fills all array elements passed stepping through bindings?
+        for(uint32_t i=0; i<descriptorWriteCount; ++i) {
+            const VkWriteDescriptorSet& write = pDescriptorWrites[i];
+
+            DescriptorIterator it = descriptor_sets_.at(write.dstSet).GetIt(write.dstBinding, write.dstArrayElement);
+            for(uint32_t j=0; j<write.descriptorCount; ++j, ++it) {
+                if(VkVizDescriptorSet::IsImage(write.descriptorType)) {
+                    *it = VkVizDescriptor(write.pImageInfo[j].imageView);
+                } else if (VkVizDescriptorSet::IsBuffer(write.descriptorType)) {
+                    *it = VkVizDescriptor(write.pBufferInfo[j].buffer);
+                } else {
+                    assert(VkVizDescriptorSet::IsBufferView(write.descriptorType));
+                    *it = VkVizDescriptor(write.pTexelBufferView[j]);
+                }
+            }
+        }
+
+        for(uint32_t i=0; i<descriptorCopyCount; ++i) {
+            const VkCopyDescriptorSet& copy = pDescriptorCopies[i];
+
+            DescriptorIterator src_it = descriptor_sets_.at(copy.srcSet).GetIt(copy.srcBinding, copy.srcArrayElement);
+            DescriptorIterator dst_it = descriptor_sets_.at(copy.dstSet).GetIt(copy.dstBinding, copy.dstArrayElement);
+            for(uint32_t j=0; j<copy.descriptorCount; ++j, ++src_it, ++dst_it) {
+                *dst_it = *src_it;
+            }
         }
     }
 };
