@@ -148,30 +148,15 @@ SERIALIZE2(BufferAccess, VkBuffer, buffer, std::vector<BufferRegion>, regions);
 struct MemoryAccess {
     READ_WRITE read_or_write;
     MEMORY_TYPE type;
-    void* data;
+
+    BufferAccess buffer_access;
+    ImageAccess image_access;
 
     MemoryAccess() = default;
-    MemoryAccess& operator=(MemoryAccess other) {
-        read_or_write = other.read_or_write;
-        type = other.type;
-        data = other.data;
-        other.data = nullptr;
-    }
-    MemoryAccess(const MemoryAccess& other): read_or_write(other.read_or_write), type(other.type) {
-        if(type == IMAGE_MEMORY) {
-            data = new ImageAccess(*static_cast<ImageAccess*>(other.data));
-        } else {
-            assert(type == BUFFER_MEMORY);
-            data = new BufferAccess(*static_cast<BufferAccess*>(other.data));
-        }
-    }
-
-    MemoryAccess(MemoryAccess&& other): read_or_write(other.read_or_write), type(other.type), data(other.data) {
-        other.data = nullptr;
-    }
-
-    // Takes ownership of the passed in data pointer.
-    MemoryAccess(READ_WRITE rw, MEMORY_TYPE type, void* access_data): read_or_write(rw), type(type), data(access_data) {}
+    MemoryAccess(READ_WRITE rw, BufferAccess buffer_access)
+        : read_or_write(rw), type(BUFFER_MEMORY), buffer_access(std::move(buffer_access)) {}
+    MemoryAccess(READ_WRITE rw, ImageAccess image_access)
+        : read_or_write(rw), type(IMAGE_MEMORY), image_access(std::move(image_access)) {}
 
     template <typename T>
     static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions) {
@@ -179,7 +164,7 @@ struct MemoryAccess {
         for(uint32_t i=0; i<regionCount; ++i) {
             regions.push_back(ImageRegion(rw, pRegions[i]));
         }
-        return MemoryAccess(rw, IMAGE_MEMORY, new ImageAccess({image, std::move(regions)}));
+        return MemoryAccess(rw, ImageAccess({image, std::move(regions)}));
     }
 
     template <typename T>
@@ -188,53 +173,22 @@ struct MemoryAccess {
         for(uint32_t i=0; i<regionCount; ++i) {
             regions.push_back(BufferRegion(rw, pRegions[i]));
         }
-
-        return MemoryAccess(rw, BUFFER_MEMORY, new BufferAccess{buffer, std::move(regions)});
+        return MemoryAccess(rw, BufferAccess{buffer, std::move(regions)});
     }
 
     static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
-        return MemoryAccess(rw, BUFFER_MEMORY, new BufferAccess{buffer, {BufferRegion(offset, size)}});
+        return MemoryAccess(rw, BufferAccess{buffer, {BufferRegion(offset, size)}});
     }
 
     template <typename T>
     static MemoryAccess ImageView(READ_WRITE rw, VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
         // std::vector<ImageRegion> regions = ImageRegion(image_view, regionCount, pRegions);
+        // Not yet implemented
         assert(0);
         return Image(rw, image_view.Image(), regionCount, pRegions);
     }
-
-    ~MemoryAccess() {
-        if (type == IMAGE_MEMORY) {
-            delete static_cast<ImageAccess*>(data);
-        } else if (type == BUFFER_MEMORY) {
-            delete static_cast<BufferAccess*>(data);
-        }
-    }
 };
-inline void to_json(json& j, const MemoryAccess& access) {
-    j = {{"type", access.type}, {"read_or_write", access.read_or_write}};
-
-    void* handle;
-    if (access.type == IMAGE_MEMORY) {
-        ImageAccess image_access = *(ImageAccess*)access.data;
-        j["access"] = image_access;
-    }
-    if (access.type == BUFFER_MEMORY) {
-        BufferAccess buffer_access = *(BufferAccess*)access.data;
-        j["access"] = buffer_access;
-    }
-}
-
-inline void from_json(const json& j, MemoryAccess& access) {
-    access.type = j["type"].get<MEMORY_TYPE>();
-    access.read_or_write = j["read_or_write"].get<READ_WRITE>();
-
-    if (access.type == IMAGE_MEMORY) {
-        access.data = new ImageAccess(j["access"].get<ImageAccess>());
-    } else if (access.type == BUFFER_MEMORY) {
-        access.data = new BufferAccess(j["access"].get<BufferAccess>());
-    }
-}
+SERIALIZE4(MemoryAccess, READ_WRITE, read_or_write, MEMORY_TYPE, type, ImageAccess, image_access, BufferAccess, buffer_access);
 
 template <typename T>
 inline MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {
