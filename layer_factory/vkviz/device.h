@@ -261,4 +261,9 @@ class VkVizDevice {
             }
         }
     }
+
+    VkVizDescriptorSet GetVkVizDescriptorSet(VkDescriptorSet set) const {
+        VkDescriptorSetLayoutCreateInfo info;
+        return VkVizDescriptorSet(&info, nullptr);
+    }
 };

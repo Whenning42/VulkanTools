@@ -18,7 +18,7 @@ std::vector<VkVizCommandBuffer> LoadFromFile(std::string filename) {
     file >> std::ws;
     while(file.peek() == '{') {
         file >> j;
-        buffers.emplace_back(VkVizCommandBuffer::from_json(j));
+        buffers.emplace_back(j.get<VkVizCommandBuffer>());
         file >> std::ws;
     }
     return buffers;

@@ -39,10 +39,10 @@ VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const V
             /* test code to check serialization/deserialization */
             std::stringstream stream;
             json js;
-            stream << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json();
+            stream << json{GetCommandBuffer(pSubmits[i].pCommandBuffers[i])};
             std::string debug = stream.str();
             stream >> js;
-            VkVizCommandBuffer buf = VkVizCommandBuffer::from_json(js);
+            VkVizCommandBuffer buf = js.get<VkVizCommandBuffer>();
             out_file_ << js.dump(2) << std::endl << std::endl;
 
             //out_file_ << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json().dump(2) << std::endl;

@@ -2,57 +2,63 @@
 #define SERIALIZE_H
 
 #include "third_party/json.hpp"
-
-#include <type_traits>
-#include <memory>
-
 using json = nlohmann::json;
 
-// A class representing a serializable object
-// Uses type erasure to achieve a nice interface
-// TODO: Example usage here
+// Helper macros to create serialization functions for structs
+#define SERIALIZE0(class) \
+        inline void to_json(json& j, const class& obj) { \
+            j = {{}}; \
+        } \
+        inline void from_json(const json& j, class& obj) {}
 
-class Serializable {
-  protected:
-    struct concept {
-        virtual ~concept() {}
-        virtual json Serialize() const = 0;
-    };
+#define SERIALIZE(class, var_type, var) \
+        inline void to_json(json& j, const class& obj) { \
+            j = {{"var", obj.var}}; \
+        } \
+        inline void from_json(const json& j, class& obj) { \
+            obj.var = j["var"].get<var_type>(); \
+        }
 
-    template <typename T>
-    struct model : public concept {
-        static_assert(!std::is_const<T>::value, "Cannot create a serilizable object from a const one");
-        model() = default;
-        model(const T& other) : data_(other) {}
-        model(T&& other) : data_(std::move(other)) {}
+#define SERIALIZE2(class, var_type1, var1, var_type2, var2) \
+        inline void to_json(json& j, const class& obj) { \
+            j = json{{"var1", obj.var1}, {"var2", obj.var2}}; \
+        } \
+        inline void from_json(const json& j, class& obj) { \
+            obj.var1 = j["var1"].get<var_type1>(); \
+            obj.var2 = j["var2"].get<var_type2>(); \
+        }
 
-        json Serialize() const override { return data_.Serialize(); }
+#define SERIALIZE3(class, var_type1, var1, var_type2, var2, var_type3, var3) \
+        inline void to_json(json& j, const class& obj) { \
+            j = json{{"var1", obj.var1}, {"var2", obj.var2}, {"var3", obj.var3}}; \
+        } \
+        inline void from_json(const json& j, class& obj) { \
+            obj.var1 = j["var1"].get<var_type1>(); \
+            obj.var2 = j["var2"].get<var_type2>(); \
+            obj.var3 = j["var3"].get<var_type3>(); \
+        }
 
-        T data_;
-    };
+#define SERIALIZE4(class, var_type1, var1, var_type2, var2, var_type3, var3, var_type4, var4) \
+        inline void to_json(json& j, const class& obj) { \
+            j = json{{"var1", obj.var1}, {"var2", obj.var2}, {"var3", obj.var3}, {"var4", obj.var4}}; \
+        } \
+        inline void from_json(const json& j, class& obj) { \
+            obj.var1 = j["var1"].get<var_type1>(); \
+            obj.var2 = j["var2"].get<var_type2>(); \
+            obj.var3 = j["var3"].get<var_type3>(); \
+            obj.var4 = j["var4"].get<var_type4>(); \
+        }
 
-   public:
-    Serializable(const Serializable&) = delete;
-    Serializable(Serializable&&) = default;
+// Serialization for pointers is needed for Vulkan handles.
+template<typename T>
+void to_json(json& j, T* const & handle) {
+    j = {{"handle", reinterpret_cast<std::uintptr_t>(handle)}};
+}
 
-    Serializable& operator=(const Serializable&) = delete;
-    Serializable& operator=(Serializable&&) = default;
-
-    template <typename T>
-    Serializable(T&& impl) : impl_(new model<std::decay_t<T>>(std::forward<T>(impl))) {}
-
-    template <typename T>
-    Serializable& operator=(T&& impl) {
-        impl_.reset(new model<std::decay_t<T>>(std::forward<T>(impl)));
-        return *this;
-    }
-
-    json Serialize(const Serializable& obj) const { obj.impl_->Serialize(); }
-
-   protected:
-    std::unique_ptr<concept> impl_;
-};
-
-
+// Deserialization for pointers is needed for Vulkan handles.
+template<typename T>
+void from_json(const json& j, T*& handle) {
+    handle = reinterpret_cast<T*>(j["handle"].get<std::uintptr_t>());
+}
 
 #endif  // SERIALIZE_H

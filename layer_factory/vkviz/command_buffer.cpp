@@ -51,7 +51,7 @@ void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoin
     }
 
     for(uint32_t i=0, set_number = firstSet; i<descriptorSetCount; ++i, ++set_number) {
-        bound_descriptor_sets[set_number] = device_.GetVkVizDescriptorSet(pDescriptorSets[i]);
+//        (*bound_descriptor_sets)[set_number] = device_.GetVkVizDescriptorSet(pDescriptorSets[i]);
     }
 
     commands_.emplace_back(BasicCommand(CMD_BINDDESCRIPTORSETS));
