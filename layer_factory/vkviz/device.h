@@ -7,9 +7,6 @@
 #include <unordered_map>
 #include <vulkan_core.h>
 
-// TODO remove
-#include <iostream>
-
 enum OperationType { MAP_MEMORY, FLUSH_MAPPED_MEMORY_RANGES, INVALIDATE_MAPPED_MEMORY_RANGES, UNMAP_MEMORY };
 inline std::string OperationName(OperationType type_) {
     std::vector<std::string> operations = {"Map memory", "Flush mapped memory ranges", "Invalidate mapped memory ranges", "Unmap memory"};
@@ -121,15 +118,27 @@ struct VkVizMemoryRegion {
     VkDeviceSize size;
 };
 
+enum PipelineType {GRAPHICS, COMPUTE};
+
+struct PipelineStage {
+    PipelineType type;
+    VkShaderStageFlagBits stage;
+    std::vector<DescriptorUse> descriptor_uses;
+};
+SERIALIZE3(PipelineStage, PipelineType, type, VkShaderStageFlagBits, stage, std::vector<DescriptorUse>, descriptor_uses);
+
 class VkVizDevice {
     VkDevice device_;
-    std::unordered_map<VkImage, VkVizMemoryRegion> image_bindings_;
-    std::unordered_map<VkBuffer, VkVizMemoryRegion> buffer_bindings_;
+    //std::unordered_map<VkImage, VkVizMemoryRegion> image_bindings_;
+    //std::unordered_map<VkBuffer, VkVizMemoryRegion> buffer_bindings_;
+    std::unordered_map<VkImageView, VkImage> images_for_views_;
+    std::unordered_map<VkBufferView, VkBuffer> buffers_for_views_;
     std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shader_create_info_;
-    std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo> set_layout_info_;
+    std::unordered_map<VkDescriptorSetLayout, VkVizDescriptorSetLayoutCreateInfo> set_layout_info_;
     std::unordered_map<VkDescriptorSet, VkVizDescriptorSet> descriptor_sets_;
-    std::vector<const uint32_t*> shader_sources_;
+    std::unordered_map<VkPipeline, std::vector<PipelineStage>> pipelines_;
 
+    std::vector<const uint32_t*> shader_sources_;
     std::vector<Operation> operations_;
 
    public:
@@ -137,23 +146,23 @@ class VkVizDevice {
 
     VkResult BindImageMemory(VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
         // Could probably cache requirements from an intercepted GetReqs call
-        VkMemoryRequirements requirements;
-        vkGetImageMemoryRequirements(device_, image, &requirements);
-        assert(image_bindings_.find(image) == image_bindings_.end());
-        image_bindings_[image] = {memoryOffset, requirements.size};
+        //VkMemoryRequirements requirements;
+        //vkGetImageMemoryRequirements(device_, image, &requirements);
+        //assert(image_bindings_.find(image) == image_bindings_.end());
+        //image_bindings_[image] = {memoryOffset, requirements.size};
     }
 
-    void UnbindImageMemory(VkImage image) { assert(image_bindings_.erase(image)); }
+    void UnbindImageMemory(VkImage image) { /* assert(image_bindings_.erase(image)); */ }
 
     VkResult BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
         // Could probably cache requirements from an intercepted GetReqs call
-        VkMemoryRequirements requirements;
-        vkGetBufferMemoryRequirements(device_, buffer, &requirements);
-        assert(buffer_bindings_.find(buffer) == buffer_bindings_.end());
-        buffer_bindings_[buffer] = {memoryOffset, requirements.size};
+        //VkMemoryRequirements requirements;
+        //vkGetBufferMemoryRequirements(device_, buffer, &requirements);
+        //assert(buffer_bindings_.find(buffer) == buffer_bindings_.end());
+        //buffer_bindings_[buffer] = {memoryOffset, requirements.size};
     }
 
-    void UnbindBufferMemory(VkBuffer buffer) { assert(buffer_bindings_.erase(buffer)); }
+    void UnbindBufferMemory(VkBuffer buffer) { /* assert(buffer_bindings_.erase(buffer)); */ }
 
     VkResult MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) {
         operations_.push_back(Op::MapMemory{memory, offset, size});
@@ -172,8 +181,6 @@ class VkVizDevice {
     void UnmapMemory(VkDeviceMemory memory) { operations_.push_back(Op::UnmapMemory{memory}); }
 
     VkResult CreateShaderModule(const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule) {
-        std::cout << "Shader module create!" << std::endl;
-
         VkShaderModuleCreateInfo shader_info;
         shader_info.flags = pCreateInfo->flags;
         shader_info.codeSize = pCreateInfo->codeSize;
@@ -186,50 +193,50 @@ class VkVizDevice {
         shader_sources_.push_back(copied_source);
     }
 
-    void PrintShaderDescriptorUses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
-        const auto descriptor_uses = get_descriptor_uses(shader_create_info, stage_create_info);
-        std::cout << "Looking at interface for shader: " << stage_create_info.module << std::endl;
-        for(const auto& use : descriptor_uses) {
-            descriptor_slot_t slot = use.first;
-            interface_var var = use.second;
-            std::cout << "Found descriptor" << std::endl;
-            std::cout << "Set: " << slot.first << std::endl;
-            std::cout << "Binding: " << slot.second << std::endl;
-            std::cout << "Storage Class: " << var.storage_class << std::endl;
-        }
-        std::cout << std::endl << std::endl;
-    }
-
     VkResult CreateGraphicsPipelines(VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
-        std::cout << "Graphics pipeline create!" << std::endl;
         for(uint32_t i=0; i<createInfoCount; ++i) {
             const VkGraphicsPipelineCreateInfo& pipeline_create_info = pCreateInfos[i];
+            std::vector<PipelineStage> stages;
+
             for(uint32_t j=0; j<pipeline_create_info.stageCount; ++j) {
                 const auto& stage_create_info = pipeline_create_info.pStages[j];
-                PrintShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
+                PipelineStage stage;
+                stage.type = GRAPHICS;
+                stage.stage = stage_create_info.stage;
+                stage.descriptor_uses = GetShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
+
+                stages.push_back(stage);
             }
+
+            pipelines_.emplace(std::make_pair(pPipelines[i], std::move(stages)));
         }
     }
 
     VkResult CreateComputePipelines(VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
-        std::cout << "Compute pipeline create!" << std::endl;
         for(uint32_t i=0; i<createInfoCount; ++i) {
             const VkComputePipelineCreateInfo& pipeline_create_info = pCreateInfos[i];
             const auto& stage_create_info = pipeline_create_info.stage;
-            PrintShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
+
+            PipelineStage stage;
+            stage.type = COMPUTE;
+            stage.stage = stage_create_info.stage;
+            stage.descriptor_uses = GetShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
+
+            std::vector<PipelineStage> stages = {stage};
+            pipelines_.emplace(std::make_pair(pPipelines[i], std::move(stages)));
         }
     }
 
     VkResult CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks*, VkDescriptorSetLayout* pSetLayout) {
-        set_layout_info_.emplace(std::make_pair(*pSetLayout, *pCreateInfo));
+        set_layout_info_.emplace(std::make_pair(*pSetLayout, VkVizDescriptorSetLayoutCreateInfo(*pCreateInfo)));
     }
 
     VkResult AllocateDescriptorSets(const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) {
         const VkDescriptorSetAllocateInfo& allocate_info = *pAllocateInfo;
         for(uint32_t i=0; i<allocate_info.descriptorSetCount; ++i) {
             const VkDescriptorSet handle = pDescriptorSets[i];
-            const VkDescriptorSetLayoutCreateInfo& layout_create_info = set_layout_info_[allocate_info.pSetLayouts[i]];
-            descriptor_sets_.emplace(std::make_pair(handle, VkVizDescriptorSet(&layout_create_info, handle)));
+            const VkVizDescriptorSetLayoutCreateInfo& layout_create_info = set_layout_info_.at(allocate_info.pSetLayouts[i]);
+            descriptor_sets_.emplace(std::make_pair(handle, VkVizDescriptorSet(layout_create_info, handle)));
         }
     }
 
@@ -262,8 +269,27 @@ class VkVizDevice {
         }
     }
 
-    VkVizDescriptorSet GetVkVizDescriptorSet(VkDescriptorSet set) const {
-        VkDescriptorSetLayoutCreateInfo info;
-        return VkVizDescriptorSet(&info, nullptr);
+    void CreateImageView(const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) {
+        images_for_views_.emplace(std::make_pair(*pView, pCreateInfo->image));
+    }
+
+    VkImage ImageFromView(VkImageView view) {
+        return images_for_views_.at(view);
+    }
+
+    void CreateBufferView(const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView) {
+        buffers_for_views_.emplace(std::make_pair(*pView, pCreateInfo->buffer));
+    }
+
+    VkBuffer BufferFromView(VkBufferView view) {
+        return buffers_for_views_.at(view);
+    }
+
+    const VkVizDescriptorSet& GetVkVizDescriptorSet(VkDescriptorSet set) const {
+        return descriptor_sets_.at(set);
+    }
+
+    const std::vector<PipelineStage> GetPipelineStages(VkPipeline pipeline) const {
+        return pipelines_.at(pipeline);
     }
 };

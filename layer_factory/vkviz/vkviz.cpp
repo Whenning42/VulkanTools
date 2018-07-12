@@ -13,7 +13,7 @@ VkResult VkViz::PostCallResetCommandBuffer(VkCommandBuffer commandBuffer, VkComm
 
 VkResult VkViz::PostCallAllocateCommandBuffers(VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo,
                                                VkCommandBuffer* pCommandBuffers) {
-    AddCommandBuffers(pAllocateInfo, pCommandBuffers);
+    AddCommandBuffers(pAllocateInfo, pCommandBuffers, &device_map_.at(device));
 }
 
 void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
@@ -30,16 +30,16 @@ void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, 
     RemoveRenderPass(device, renderPass);
 }
 
-#include "third_party/json.hpp"
+#include "serialize.h"
 #include <sstream>
-using json = nlohmann::json;
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
             /* test code to check serialization/deserialization */
             std::stringstream stream;
             json js;
-            stream << json{GetCommandBuffer(pSubmits[i].pCommandBuffers[i])};
+            stream << json(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
+            out_file_ << json(GetCommandBuffer(pSubmits[i].pCommandBuffers[i])).dump(2); out_file_.flush();
             std::string debug = stream.str();
             stream >> js;
             VkVizCommandBuffer buf = js.get<VkVizCommandBuffer>();

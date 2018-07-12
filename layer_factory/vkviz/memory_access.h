@@ -148,7 +148,6 @@ SERIALIZE2(BufferAccess, VkBuffer, buffer, std::vector<BufferRegion>, regions);
 struct MemoryAccess {
     READ_WRITE read_or_write;
     MEMORY_TYPE type;
-
     BufferAccess buffer_access;
     ImageAccess image_access;
 

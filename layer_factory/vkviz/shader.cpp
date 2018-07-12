@@ -667,7 +667,7 @@ static bool IsWritableDescriptorType(shader_module const *module, uint32_t type_
     return false;
 }
 
-static std::vector<std::pair<descriptor_slot_t, interface_var>> CollectInterfaceByDescriptorSlot(
+static std::vector<DescriptorUse> CollectInterfaceByDescriptorSlot(
     debug_report_data const *report_data, shader_module const *src, std::unordered_set<uint32_t> const &accessible_ids,
     bool *has_writable_descriptor) {
     std::unordered_map<unsigned, unsigned> var_sets;
@@ -692,7 +692,7 @@ static std::vector<std::pair<descriptor_slot_t, interface_var>> CollectInterface
         }
     }
 
-    std::vector<std::pair<descriptor_slot_t, interface_var>> out;
+    std::vector<DescriptorUse> out;
 
     for (auto id : accessible_ids) {
         auto insn = src->get_def(id);
@@ -713,7 +713,7 @@ static std::vector<std::pair<descriptor_slot_t, interface_var>> CollectInterface
 
             v.storage_class = insn.word(3);
 
-            out.emplace_back(std::make_pair(set, binding), v);
+            out.emplace_back(DescriptorUse{set, binding, v.storage_class});
 
             if (var_nonwritable.find(id) == var_nonwritable.end() && IsWritableDescriptorType(src, insn.word(1))) {
                 *has_writable_descriptor = true;
@@ -842,7 +842,7 @@ static std::unordered_set<uint32_t> MarkAccessibleIds(shader_module const *src, 
     return ids;
 }
 
-std::vector<std::pair<descriptor_slot_t, interface_var>> get_descriptor_uses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
+std::vector<DescriptorUse> GetShaderDescriptorUses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info) {
     VkShaderModule vk_shader_module = stage_create_info.module;
     shader_module shader_module(&shader_create_info, vk_shader_module);
     auto entrypoint = FindEntrypoint(&shader_module, stage_create_info.pName, stage_create_info.stage);

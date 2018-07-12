@@ -28,6 +28,7 @@
 #include "render_pass.h"
 #include "command_buffer.h"
 
+class VkVizDevice;
 
 // vkCmd tracking -- complete as of header 1.0.68
 // please keep in "none, then sorted" order
@@ -66,6 +67,10 @@ class VkViz : public layer_factory {
         assert(buffer_map_.erase(buffer));
     }
 
+    VkResult vkCreateBufferView(VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView) {
+        device_map_.at(device).CreateBufferView(pCreateInfo, pAllocator, pView);
+    }
+
     VkResult PostCallCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
                                  VkImage* pImage) {
         image_map_.emplace(*pImage, VkVizImage(*pImage, device));
@@ -73,6 +78,10 @@ class VkViz : public layer_factory {
     void PostCallDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) {
         device_map_.at(device).UnbindImageMemory(image);
         assert(image_map_.erase(image));
+    }
+
+    VkResult PostCallCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) {
+        device_map_.at(device).CreateImageView(pCreateInfo, pAllocator, pView);
     }
 
     VkResult PostCallMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
@@ -130,6 +139,18 @@ class VkViz : public layer_factory {
     // Tracks memory bindings.
     VkResult PostCallBindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
         device_map_.at(device).BindImageMemory(image, memory, memoryOffset);
+    }
+
+    VkResult PostCallCreateDescriptorSetLayout(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) {
+        device_map_.at(device).CreateDescriptorSetLayout(pCreateInfo, pAllocator, pSetLayout);
+    }
+
+    VkResult PostCallAllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) {
+        device_map_.at(device).AllocateDescriptorSets(pAllocateInfo, pDescriptorSets);
+    }
+
+    void PostCallUpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) {
+        device_map_.at(device).UpdateDescriptorSets(descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
     }
 
     // These functions are implemented in vkviz_command_intercepts.cpp and just call the corresponding function on the
@@ -262,9 +283,9 @@ class VkViz : public layer_factory {
         return render_pass_map_.at(render_pass);
     }
 
-    void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers) {
+    void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers, VkVizDevice* device) {
         for (int i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
-            command_buffer_map_.emplace(pCommandBuffers[i], VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level));
+            command_buffer_map_.emplace(pCommandBuffers[i], VkVizCommandBuffer(pCommandBuffers[i], pAllocateInfo->level, device));
         }
     }
 
@@ -279,6 +300,7 @@ class VkViz : public layer_factory {
         return command_buffer_map_.at(command_buffer);
     }
 
+    // The layer has a map of all VkViz objects that are dispatchable.
     std::unordered_map<VkCommandBuffer, VkVizCommandBuffer> command_buffer_map_;
     std::unordered_map<VkRenderPass, VkVizRenderPass> render_pass_map_;
     std::unordered_map<VkDevice, VkVizDevice> device_map_;
@@ -309,7 +331,6 @@ VkResult CreateQueryPool(VkDevice device, const VkQueryPoolCreateInfo* pCreateIn
 VkResult CreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule;
 VkResult CreatePipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout;
 VkResult CreateSampler(VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler;
-VkResult CreateDescriptorSetLayout(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout;
 VkResult CreateDescriptorPool(VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool;
 VkResult CreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer;
 VkResult CreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass;

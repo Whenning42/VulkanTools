@@ -35,9 +35,6 @@ void VkVizCommandBuffer::BeginRenderPass(const VkRenderPassBeginInfo* pRenderPas
     render_pass_instances_.emplace_back(VkVizRenderPassInstance(pRenderPassBegin));
 }
 
-std::vector<VkVizDescriptorSet> graphics_descriptor_sets_;
-std::vector<VkVizDescriptorSet> compute_descriptor_sets_;
-
 void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet,
                                             uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
                                             uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) {
@@ -51,10 +48,10 @@ void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoin
     }
 
     for(uint32_t i=0, set_number = firstSet; i<descriptorSetCount; ++i, ++set_number) {
-//        (*bound_descriptor_sets)[set_number] = device_.GetVkVizDescriptorSet(pDescriptorSets[i]);
+        (*bound_descriptor_sets)[set_number] = device_->GetVkVizDescriptorSet(pDescriptorSets[i]);
     }
 
-    commands_.emplace_back(BasicCommand(CMD_BINDDESCRIPTORSETS));
+    commands_.emplace_back(BindDescriptorSetsCommand(CMD_BINDDESCRIPTORSETS, *bound_descriptor_sets));
 }
 
 void VkVizCommandBuffer::BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {
@@ -62,6 +59,11 @@ void VkVizCommandBuffer::BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, V
 }
 
 void VkVizCommandBuffer::BindPipeline(VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) {
+    if(pipelineBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS) {
+        bound_graphics_pipeline_ = pipeline;
+    } else {
+        bound_compute_pipeline_ = pipeline;
+    }
     commands_.emplace_back(BasicCommand(CMD_BINDPIPELINE));
 }
 
@@ -199,66 +201,56 @@ void VkVizCommandBuffer::DispatchIndirect(VkBuffer buffer, VkDeviceSize offset) 
     // Read buffer
 }
 
-std::vector<MemoryAccess> DrawAccesses() {
+// We don't track the regions of the given resources being affected.
+std::vector<MemoryAccess> VkVizCommandBuffer::GraphicsShaderAccesses() {
     std::vector<MemoryAccess> accesses;
+    const std::vector<PipelineStage> pipeline = device_->GetPipelineStages(bound_graphics_pipeline_);
+    for(const auto& stage : pipeline) {
+        for(const DescriptorUse& descriptor_use : stage.descriptor_uses) {
+            const std::vector<VkVizDescriptor> descriptors = DescriptorsFromUse(descriptor_use, GRAPHICS);
 
-    /*
-    // Add shader output writes presumably to entire render target
-    // Add descriptor reads and writes for all stages and regions possible, possibly anotate as possible reads/writes
-    std::vector<MemoryAccess> output_writes = OutputAttachmentWrites(pipeline?);
-    std::vector<MemoryAccess> descriptor_accesses = PossibleDescriptorAccesses(pipeline?);
-    accesses.insert(accesses.end(), output_writes.begin(), output_writes.end());
-    accesses.insert(accesses.end(), descritpro_accesses.begin(), descriptor_accesses.end());
-    */
-    return accesses;
-}
+            READ_WRITE read_or_write;
+            if(descriptor_use.storage_class == 0) {
+                read_or_write = READ;
+            } else {
+                read_or_write = WRITE;
+            }
 
-std::vector<MemoryAccess> DrawAccess(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-    std::vector<MemoryAccess> accesses;
+            for(const auto& descriptor : descriptors) {
+                if(descriptor.descriptor_type == IMAGE_DESCRIPTOR) {
+                    VkImageView image_view = descriptor.ImageView();
+                    VkImage image = device_->ImageFromView(image_view);
+                    VkImageBlit dummy_blit;
+                    accesses.emplace_back(MemoryAccess::Image(read_or_write, image, 0, &dummy_blit));
+                } else if(descriptor.descriptor_type == BUFFER_DESCRIPTOR) {
+                    VkBuffer buffer = descriptor.Buffer();
+                    accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
+                } else {
+                    VkBufferView buffer_view = descriptor.BufferView();
+                    VkBuffer buffer = device_->BufferFromView(buffer_view);
+                    accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
+                }
+            }
+        }
+    }
 
-    /*
-    MemoryAccess buffer_read = VertexBufferRead(pipeline?);
-    return buffer_read + DrawAccesses();
-    */
-    return accesses;
-}
-
-std::vector<MemoryAccess> DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
-                                      uint32_t firstInstance) {
-    std::vector<MemoryAccess> accesses;
-
-    /*
-    MemoryAccess vertex_buffer_read = VertexBufferRead(pipeline?);
-    MemoryAccess index_buffer_read = IndexBufferRead(pipleine?);
-    return buffer_read + DrawAccesses();
-    */
-    return accesses;
-}
-
-std::vector<MemoryAccess> DrawIndexedIndirect() {
-    std::vector<MemoryAccess> accesses;
-
-    /*
-    acccesses;
-
-    MemAccess vertex_buffer = vbread(pipeline);
-    MemAccess index_buffer = ibread(pipeline);
-    return vertex_buffer + index_buffer + DrawAccess();
-    */
     return accesses;
 }
 
 void VkVizCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-    commands_.emplace_back(Access(CMD_DRAW, DrawAccess(vertexCount, instanceCount, firstVertex, firstInstance)));
+    // Reads vertex buffers according to PipelineVertexInputState
+    // Runs graphics pipeline shader stages
 
-    // Graphics pipeline synchronization
+    commands_.emplace_back(Access(CMD_DRAW, GraphicsShaderAccesses()));
 }
 
 void VkVizCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
                                      uint32_t firstInstance) {
-    commands_.emplace_back(BasicCommand(CMD_DRAWINDEXED));
-    // Graphics pipeline synchronization
     // Read index buffer (bound by CmdBindIndexBuffer, not an arg)
+    // Reads vertex buffers according to PipelineVertexInputState
+    // Runs graphics pipeline shader stages
+
+    commands_.emplace_back(Access(CMD_DRAWINDEXED, GraphicsShaderAccesses()));
 }
 
 void VkVizCommandBuffer::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) {

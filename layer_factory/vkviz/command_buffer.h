@@ -97,20 +97,37 @@ class VkVizRenderPassInstance {
 };
 
 class VkVizCommandBuffer {
-   public:
+    VkVizDevice* device_;
 
-    VkCommandBuffer handle_;
+    VkPipeline bound_graphics_pipeline_ = nullptr;
+    VkPipeline bound_compute_pipeline_ = nullptr;
+    std::vector<VkVizDescriptorSet> graphics_descriptor_sets_;
+    std::vector<VkVizDescriptorSet> compute_descriptor_sets_;
+
     VkCommandBufferLevel level_;
-    std::vector<Command> commands_;
+    std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
     int current_render_pass_ = -1;
-    std::vector<VkVizRenderPassInstance> render_pass_instances_;
+
+    // Looks like spirv doesn't give us the element index?
+    std::vector<VkVizDescriptor> DescriptorsFromUse(const DescriptorUse& use, PipelineType pipeline_type) {
+        std::vector<VkVizDescriptor> out;
+        if(pipeline_type == GRAPHICS) {
+            return graphics_descriptor_sets_[use.set].set_[use.binding];
+        } else {
+            return compute_descriptor_sets_[use.set].set_[use.binding];
+        }
+    }
+
+   std::vector<MemoryAccess> GraphicsShaderAccesses();
+
+   public:
+    VkCommandBuffer handle_;
+    std::vector<Command> commands_;
 
     VkVizCommandBuffer() = default;
     VkVizCommandBuffer(VkCommandBuffer handle, std::vector<Command> commands) : handle_(handle), commands_(commands) {};
-
-
-    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level) : handle_(commandBuffer), level_(level) {}
+    VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level, VkVizDevice* device) : handle_(commandBuffer), level_(level), device_(device) {}
 
     const std::vector<Command>& Commands() const { return commands_; }
     VkCommandBuffer Handle() const { return handle_; }

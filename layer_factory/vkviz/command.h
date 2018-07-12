@@ -73,7 +73,7 @@ struct PipelineBarrierCommand : BasicCommand {
 };
 SERIALIZE2(PipelineBarrierCommand, CMD_TYPE, type_, VkVizPipelineBarrier, barrier_);
 
-struct BindDescriptorSets : BasicCommand {
+struct BindDescriptorSetsCommand : BasicCommand {
     static const VkVizCommandType VkVizType() { return VkVizCommandType::BIND_DESCRIPTOR_SETS; }
 
     // Currently stores all bound descriptor sets as opposed to just the changed ones. This allows deserialization to be stateless.
@@ -82,14 +82,14 @@ struct BindDescriptorSets : BasicCommand {
     enum GraphicsOrCompute {GRAPHICS, COMPUTE};
     GraphicsOrCompute bind_point;
 
-    BindDescriptorSets() =  default;
-    BindDescriptorSets(CMD_TYPE type, std::vector<VkVizDescriptorSet> sets): BasicCommand(type) {
-        for(const auto& set : bound_descriptor_sets_) {
-            //bound_descriptor_sets_.push_back(set.Clone());
+    BindDescriptorSetsCommand() =  default;
+    BindDescriptorSetsCommand(CMD_TYPE type, std::vector<VkVizDescriptorSet> bind_sets): BasicCommand(type) {
+        for(const auto& set : bind_sets) {
+            bound_descriptor_sets_.push_back(set);
         }
     }
 };
-SERIALIZE2(BindDescriptorSets, CMD_TYPE, type_, std::vector<VkVizDescriptorSet>, bound_descriptor_sets_);
+SERIALIZE2(BindDescriptorSetsCommand, CMD_TYPE, type_, std::vector<VkVizDescriptorSet>, bound_descriptor_sets_);
 
 class Command {
   protected:
@@ -98,7 +98,7 @@ class Command {
         virtual std::string CmdTypeString() const = 0;
         virtual VkVizCommandType VkVizType() const = 0;
         virtual std::unique_ptr<concept> Clone() const = 0;
-        //virtual void to_json(json& j, const concept& obj) const = 0;
+        virtual void to_json_(json& j) const = 0;
     };
 
     template <typename T>
@@ -113,8 +113,8 @@ class Command {
             return std::unique_ptr<model>(new model(*this));
         }
 
-        void to_json(json& j, const T& obj) const {
-            to_json(j, obj);
+        void to_json_(json& j) const override {
+            to_json(j, data_);
             j["kVkVizType"] = T::VkVizType();
         }
 
@@ -149,41 +149,37 @@ class Command {
     std::string CmdTypeString() const { return impl_->CmdTypeString(); }
     std::string Name() const { return CmdTypeString(); }
 
+    void to_json_(json& j) const {
+        impl_->to_json_(j);
+    }
+
    protected:
     std::unique_ptr<concept> impl_;
 };
 inline void to_json(json& j, const Command& obj) {
-    return to_json(j, obj);
+    obj.to_json_(j);
 }
 inline void from_json(const json& j, Command& obj) {
     VkVizCommandType type = j["kVkVizType"].get<VkVizCommandType>();
     switch(type) {
         case VkVizCommandType::BASIC:
             obj = j.get<BasicCommand>();
+            break;
         case VkVizCommandType::ACCESS:
             obj = j.get<Access>();
+            break;
         case VkVizCommandType::INDEX_BUFFER_BIND:
             obj = j.get<IndexBufferBind>();
+            break;
         case VkVizCommandType::VERTEX_BUFFER_BIND:
             obj = j.get<VertexBufferBind>();
+            break;
         case VkVizCommandType::PIPELINE_BARRIER:
             obj = j.get<PipelineBarrierCommand>();
+            break;
         case VkVizCommandType::BIND_DESCRIPTOR_SETS:
-            obj = j.get<BindDescriptorSets>();
-        /*
-        case VkVizCommandType::BASIC:
-            return BasicCommand::from_json(j);
-        case VkVizCommandType::ACCESS:
-            return Access::from_json(j);
-        case VkVizCommandType::INDEX_BUFFER_BIND:
-            return IndexBufferBind::from_json(j);
-        case VkVizCommandType::VERTEX_BUFFER_BIND:
-            return VertexBufferBind::from_json(j);
-        case VkVizCommandType::PIPELINE_BARRIER:
-            return PipelineBarrierCommand::from_json(j);
-        case VkVizCommandType::BIND_DESCRIPTOR_SETS:
-            return BindDescriptorSets::from_json(j);
-            */
+            obj = j.get<BindDescriptorSetsCommand>();
+            break;
     }
 }
 

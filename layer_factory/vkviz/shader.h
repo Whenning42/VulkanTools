@@ -24,6 +24,8 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+#include "serialize.h"
+
 #include <cassert>
 #include <unordered_map>
 #include <unordered_set>
@@ -90,7 +92,11 @@ struct interface_var {
     // TODO: collect the name, too? Isn't required to be present.
 };
 
-typedef std::pair<unsigned, unsigned> descriptor_slot_t;
+struct descriptor_slot_t {
+    uint32_t set;
+    uint32_t binding;
+};
+
 struct shader_module {
     // The spirv image itself
     std::vector<uint32_t> words;
@@ -129,6 +135,13 @@ struct shader_module {
     void BuildDefIndex();
 };
 
-std::vector<std::pair<descriptor_slot_t, interface_var>> get_descriptor_uses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info);
+struct DescriptorUse {
+    uint32_t set;
+    uint32_t binding;
+    uint32_t storage_class;
+};
+SERIALIZE3(DescriptorUse, uint32_t, set, uint32_t, binding, uint32_t, storage_class);
+
+std::vector<DescriptorUse> GetShaderDescriptorUses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info);
 
 #endif  // SHADER_H
