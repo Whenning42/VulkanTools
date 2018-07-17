@@ -83,7 +83,7 @@ struct PipelineBarrierCommand : BasicCommand {
     C_SERIALIZE2(BasicCommand, PipelineBarrierCommand, type, barrier);
 };
 
-// This class isn't currently used since VkVizCommandBuffers store all the descriptor set use info for a draw calls in the
+// This struct isn't currently used since VkVizCommandBuffers store all the descriptor set use info for draw calls in the
 // DrawCommand struct.
 struct BindDescriptorSetsCommand : BasicCommand {
     /*
@@ -101,6 +101,9 @@ struct BindDescriptorSetsCommand : BasicCommand {
     BindDescriptorSetsCommand(CMD_TYPE type, std::vector<VkVizDescriptorSet> bind_sets) : BasicCommand(type) {}
 };
 
+// A wrapper for BasicCommands. Allows one to use classes inherited from BasicCommands without working with pointers. Also handles
+// serialization and deserialization of BasicCommands, ensuring that serialized and deserialized BasicCommands retain their type
+// information.
 class CommandWrapper {
    public:
     CommandWrapper() : command_(nullptr){};
@@ -118,6 +121,8 @@ class CommandWrapper {
 
     VkVizCommandType VkVizType() const { return command_->VkVizType(); }
 
+    // kVkVizType stores what type any serialized children classes of BasicCommands were. This allows us to know which type to
+    // deserialize stored commands as.
     void to_json(json& j) const {
         command_->to_json(j);
         j["kVkVizType"] = VkVizType();
@@ -131,6 +136,8 @@ class CommandWrapper {
     std::unique_ptr<BasicCommand> command_;
 };
 inline void to_json(json& j, const CommandWrapper& obj) { obj.to_json(j); }
+
+// Here we instantiate our CommandWrapper with the correct class type using the previously stored VkVizType.
 inline void from_json(const json& j, CommandWrapper& obj) {
     VkVizCommandType type = j["kVkVizType"].get<VkVizCommandType>();
     switch(type) {
