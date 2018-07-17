@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.1.0)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_definitions(-DVK_USE_PLATFORM_WIN32_KHR -DVK_USE_PLATFORM_WIN32_KHX -DWIN32_LEAN_AND_MEAN)
     set(DisplayServer Win32)
@@ -50,7 +50,9 @@ if (WIN32)
     # The changed behavior is that constructor initializers are now fixed to clear the struct members.
     add_compile_options("$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,19>>:/wd4351>")
 else()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wpointer-arith -Wno-unused-function -Wno-sign-compare")
+    set (CMAKE_CXX_STANDARD 14)
+    set (CMAKE_CXX_STANDARD_REQUIRED ON)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpointer-arith -Wno-unused-function -Wno-sign-compare")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpointer-arith -Wno-unused-function -Wno-sign-compare")
 endif()
 
@@ -112,8 +114,10 @@ else()
     string(REPLACE "layer_factory" "${target}" target_json_file "${json_file_template}")
     file(TO_NATIVE_PATH ${JSON_DEST_PATH}/VkLayer_${target}.json dst_json)
     file(WRITE ${dst_json} ${target_json_file})
+
     add_library(VkLayer_${target} SHARED ${ARGN})
     target_link_Libraries(VkLayer_${target} VkLayer_utils)
+
     target_include_directories(VkLayer_${target} PRIVATE ${subdir})
     add_dependencies(VkLayer_${target} generate_helper_files VkLayer_utils)
     set_target_properties(VkLayer_${target} PROPERTIES LINK_FLAGS "-Wl,-Bsymbolic,--exclude-libs,ALL")
@@ -124,6 +128,25 @@ else()
     endmacro()
 endif()
 
+
+# Build Qt app
+macro(build_vkviz_frontend subdir)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Widgets CONFIG REQUIRED)
+
+add_executable(VkVizFrontend ${ARGN})
+target_link_Libraries(VkVizFrontend VkLayer_utils Qt5::Widgets)
+
+target_include_directories(VkVizFrontend PRIVATE ${subdir})
+add_dependencies(VkVizFrontend generate_helper_files VkLayer_utils)
+set_target_properties(VkVizFrontend PROPERTIES LINK_FLAGS "-Wl,-Bsymbolic,--exclude-libs,ALL")
+endmacro()
+
+
 set (CMAKE_LAYER_FACTORY_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 SUBDIRLIST(ST_SUBDIRS ${CMAKE_LAYER_FACTORY_SOURCE_DIR})
 
@@ -133,8 +156,18 @@ set(dep_chain generate_vlf)
 FOREACH(subdir ${ST_SUBDIRS})
     file(GLOB INTERCEPTOR_SOURCES ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/*.h ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/*.cpp)
     add_factory_layer(${subdir} ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir} layer_factory.cpp layer_factory.h ${V_LVL_ROOT_DIR}/layers/vk_layer_table.cpp ${INTERCEPTOR_SOURCES})
+
     add_dependencies(VkLayer_${subdir} ${dep_chain})
     set(dep_chain VkLayer_${subdir})
+
+    if(${subdir} STREQUAL "vkviz")
+	    file(GLOB FRONTEND_SOURCES ${INTERCEPTOR_SOURCES} layer_factory.cpp layer_factory.h ${V_LVL_ROOT_DIR}/layers/vk_layer_table.cpp ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.h ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.cpp ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.ui)
+	    list(REMOVE_ITEM FRONTEND_SOURCES ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/vkviz.cpp)
+	    # build_vkviz_frontend(${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir} ${FRONTEND_SOURCES})
+
+	    # add_dependencies(VkVizFrontend ${dep_chain})
+	    # set(dep_chain VkVizFrontend)
+    endif()
 ENDFOREACH()
 
 # Add targets for JSON file install on Linux.

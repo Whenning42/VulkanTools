@@ -1,7 +1,7 @@
 # The name of our project is "VULKAN". CMakeLists files in this project can
 # refer to the root source directory of the project as ${VULKAN_SOURCE_DIR} and
 # to the root binary directory of the project as ${VULKAN_BINARY_DIR}.
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.1.0)
 project (VULKAN_TOOLS)
 # set (CMAKE_VERBOSE_MAKEFILE 1)
 
@@ -94,11 +94,11 @@ include_directories(${V_LVL_ROOT_DIR}/include)
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows" OR
     CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
-    option(BUILD_TESTS "Build tests" ON)
-    option(BUILD_LAYERSVT "Build layersvt" ON)
+    option(BUILD_TESTS "Build tests" OFF)
+    option(BUILD_LAYERSVT "Build layersvt" OFF)
     option(BUILD_VLF "Build layer_factory" ON)
-    option(BUILD_VKTRACE "Build VkTrace" ON)
-    option(BUILD_VIA "Build via" ON)
+    option(BUILD_VKTRACE "Build VkTrace" OFF)
+    option(BUILD_VIA "Build via" OFF)
 
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT (BUILD_WSI_XCB_SUPPORT OR BUILD_WSI_WAYLAND_SUPPORT))
         option(BUILD_VKTRACE_REPLAY "Build VkReplay" OFF)
