@@ -164,6 +164,12 @@ class VkVizDevice {
 
     void UnbindBufferMemory(VkBuffer buffer) { /* assert(buffer_bindings_.erase(buffer)); */ }
 
+    // We don't track the state of images, just their uses.
+    void CreateImage(const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) {}
+
+    // We don't yet track the state of buffers, just their uses.
+    void CreateBuffer(const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) {}
+
     VkResult MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) {
         operations_.push_back(Op::MapMemory{memory, offset, size});
     }

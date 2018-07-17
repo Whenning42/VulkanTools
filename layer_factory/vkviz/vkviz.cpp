@@ -1,5 +1,8 @@
 #include "vkviz.h"
+#include "serialize.h"
+
 #include <algorithm>
+#include <sstream>
 
 VkResult VkViz::PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) {
     GetCommandBuffer(commandBuffer).Begin();
@@ -21,31 +24,17 @@ void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPoo
     RemoveCommandBuffers(commandBufferCount, pCommandBuffers);
 }
 
-VkResult VkViz::PostCallCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo,
-                                         const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) {
-    AddRenderPass(device, pCreateInfo, pRenderPass);
-}
-
-void VkViz::PostCallDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) {
-    RemoveRenderPass(device, renderPass);
-}
-
-#include "serialize.h"
-#include <sstream>
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            /* test code to check serialization/deserialization */
+            /* Test code to check serialization/deserialization. Missing expected fields will fail asserts. */
             std::stringstream stream;
             json js;
             stream << json(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
-            out_file_ << json(GetCommandBuffer(pSubmits[i].pCommandBuffers[i])).dump(2); out_file_.flush();
             std::string debug = stream.str();
             stream >> js;
             VkVizCommandBuffer buf = js.get<VkVizCommandBuffer>();
             out_file_ << js.dump(2) << std::endl << std::endl;
-
-            //out_file_ << GetCommandBuffer(pSubmits[i].pCommandBuffers[i]).to_json().dump(2) << std::endl;
         }
     }
 }
