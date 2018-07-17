@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * Author: Tobin Ehlis <tobine@google.com>
+ * Author: William Henning <whenning@google.com>
  */
 
 #include "vkviz.h"

@@ -14,6 +14,7 @@ struct ImageBarrier {
     VkImage image;
     VkImageSubresourceRange subresource_range;
 };
+// We don't serialize subresource_range here since we don't yet track subresources.
 SERIALIZE(ImageBarrier, image);
 
 struct BufferBarrier {
@@ -21,9 +22,10 @@ struct BufferBarrier {
     VkDeviceSize offset;
     VkDeviceSize size;
 };
-SERIALIZE3(BufferBarrier, buffer, offset, size);
+// We don't serialize offset or size here since we don't yet track subresources.
+SERIALIZE(BufferBarrier, buffer);
 
-enum BarrierType { GLOBAL, BUFFER, IMAGE };
+enum class BarrierType { GLOBAL, BUFFER, IMAGE };
 struct MemoryBarrier {
     VkAccessFlags src_access_mask;
     VkAccessFlags dst_access_mask;
@@ -73,9 +75,9 @@ struct MemoryBarrier {
 inline void to_json(json& j, const MemoryBarrier& barrier) {
     j = {{"src_access_mask", barrier.src_access_mask}, {"dst_access_mask", barrier.dst_access_mask}, {"barrier_type", barrier.barrier_type}};
 
-    if (barrier.barrier_type == BUFFER) {
+    if (barrier.barrier_type == BarrierType::BUFFER) {
         j["buffer_barrier"] = barrier.buffer_barrier;
-    } else if (barrier.barrier_type == IMAGE) {
+    } else if (barrier.barrier_type == BarrierType::IMAGE) {
         j["image_barrier"] = barrier.image_barrier;
     }
 }
@@ -84,9 +86,9 @@ inline void from_json(const json& j, MemoryBarrier& barrier) {
     barrier.dst_access_mask = j["dst_access_mask"].get<VkAccessFlags>();
     barrier.barrier_type = j["barrier_type"].get<BarrierType>();
 
-    if(barrier.barrier_type == BUFFER) {
+    if (barrier.barrier_type == BarrierType::BUFFER) {
         barrier.buffer_barrier = j["buffer_barrier"].get<BufferBarrier>();
-    } else if(barrier.barrier_type == IMAGE) {
+    } else if (barrier.barrier_type == BarrierType::IMAGE) {
         barrier.image_barrier = j["image_barrier"].get<ImageBarrier>();
     }
 }
