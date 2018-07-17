@@ -12,12 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Author: Tobin Ehlis <tobine@google.com>
  * Author: William Henning <whenning@google.com>
  */
 
-#ifndef VkViz_H
-#define VkViz_H
+#ifndef VKVIZ_H
+#define VKVIZ_H
 
 #include <unordered_map>
 #include <iostream>
@@ -421,7 +420,7 @@ class VkViz : public layer_factory {
     }
 };
 
-#endif  // VkViz_H
+#endif  // VKVIZ_H
 
 /*
 
