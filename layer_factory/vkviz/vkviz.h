@@ -26,7 +26,6 @@
 
 #include <vulkan_core.h>
 #include "layer_factory.h"
-#include "render_pass.h"
 #include "command_buffer.h"
 
 class VkVizDevice;
