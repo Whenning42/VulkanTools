@@ -15,6 +15,9 @@
  * Author: William Henning <whenning@google.com>
  */
 
+#ifndef COMMAND_VIZ_H
+#define COMMAND_VIZ_H
+
 #include "command.h"
 
 #include <QTreeWidget>
@@ -195,3 +198,5 @@ class CommandBufferViz {
         return command_buffer_widget;
     }
 };
+
+#endif  // COMMAND_VIZ_H

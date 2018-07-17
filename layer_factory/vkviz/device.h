@@ -15,6 +15,9 @@
  * Author: William Henning <whenning@google.com>
  */
 
+#ifndef DEVICE_H
+#define DEVICE_H
+
 #include "serialize.h"
 #include "descriptor_set.h"
 #include "shader.h"
@@ -247,3 +250,5 @@ class VkVizDevice {
         return pipelines_.at(pipeline);
     }
 };
+
+#endif  // DEVICE_H

@@ -16,4 +16,9 @@
  * Author: William Henning <whenning@google.com>
  */
 
+#ifndef INTERCEPTOR_OBJECTS_H
+#define INTERCEPTOR_OBJECTS_H
+
 #include "vkviz.h"
+
+#endif  // INTERCEPTOR_OBJECTS_H
