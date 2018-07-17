@@ -163,10 +163,10 @@ FOREACH(subdir ${ST_SUBDIRS})
     if(${subdir} STREQUAL "vkviz")
 	    file(GLOB FRONTEND_SOURCES ${INTERCEPTOR_SOURCES} layer_factory.cpp layer_factory.h ${V_LVL_ROOT_DIR}/layers/vk_layer_table.cpp ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.h ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.cpp ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/VkVizFrontend/*.ui)
 	    list(REMOVE_ITEM FRONTEND_SOURCES ${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir}/vkviz.cpp)
-	    # build_vkviz_frontend(${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir} ${FRONTEND_SOURCES})
+	    build_vkviz_frontend(${CMAKE_LAYER_FACTORY_SOURCE_DIR}/${subdir} ${FRONTEND_SOURCES})
 
-	    # add_dependencies(VkVizFrontend ${dep_chain})
-	    # set(dep_chain VkVizFrontend)
+	    add_dependencies(VkVizFrontend ${dep_chain})
+	    set(dep_chain VkVizFrontend)
     endif()
 ENDFOREACH()
 
