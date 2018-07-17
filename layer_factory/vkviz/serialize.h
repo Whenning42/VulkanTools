@@ -58,6 +58,7 @@ using json = nlohmann::json;
         obj.var4 = j[#var4].get<decltype(obj.var4)>();                                    \
     }
 
+// Helper macros to create serialization functions for children classes inheriting from a base class.
 #define C_SERIALIZE(base_class, derived_class, var)             \
     void to_json(json& j) const override { j = {{#var, var}}; } \
     void from_json(const json& j) override { this->var = j[#var].get<decltype(this->var)>(); }
