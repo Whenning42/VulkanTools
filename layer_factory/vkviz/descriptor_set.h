@@ -90,6 +90,7 @@ inline void from_json(const json& j, VkVizDescriptor& desc) {
 typedef std::vector<VkVizDescriptor> Binding;
 typedef std::vector<Binding> Set;
 
+// A helper class for stepping through descriptor sets' bindings and elements.
 struct DescriptorIterator {
     Set& set;
     uint32_t binding_index;
@@ -159,7 +160,8 @@ struct VkVizDescriptorSetLayoutCreateInfo {
     }
 };
 
-// This implementation doesn't handle large binding indices well.
+// This implementation doesn't handle large binding indices well, because it allocates a vector for each binding number up to the
+// highest binding. This could waste a lot of memory for sparse bindings with very large indices.
 class VkVizDescriptorSet {
 public:
     VkDescriptorSet vk_set_;
