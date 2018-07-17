@@ -673,6 +673,7 @@ static std::vector<DescriptorUse> CollectInterfaceByDescriptorSlot(
     std::unordered_map<unsigned, unsigned> var_sets;
     std::unordered_map<unsigned, unsigned> var_bindings;
     std::unordered_map<unsigned, unsigned> var_nonwritable;
+    std::unordered_map<unsigned, unsigned> uniform_blocks;
 
     for (auto insn : *src) {
         // All variables in the Uniform or UniformConstant storage classes are required to be decorated with both
@@ -688,6 +689,10 @@ static std::vector<DescriptorUse> CollectInterfaceByDescriptorSlot(
 
             if (insn.word(2) == spv::DecorationNonWritable) {
                 var_nonwritable[insn.word(1)] = 1;
+            }
+
+            if (insn.word(2) == spv::DecorationBlock) {
+                uniform_blocks[insn.word(1)] = 1;
             }
         }
     }
@@ -713,7 +718,16 @@ static std::vector<DescriptorUse> CollectInterfaceByDescriptorSlot(
 
             v.storage_class = insn.word(3);
 
-            out.emplace_back(DescriptorUse{set, binding, v.storage_class});
+            bool uniform_is_block = false;
+            if (v.storage_class == spv::StorageClassUniform) {
+                auto typepointer_definition = src->get_def(v.type_id);
+                auto uniform_id = typepointer_definition.word(3);
+                uniform_is_block = ValueOrDefault(uniform_blocks, uniform_id, 0);
+            }
+
+            bool uniform_is_readonly = uniform_is_block || v.storage_class == spv::StorageClassUniformConstant;
+
+            out.emplace_back(DescriptorUse{set, binding, uniform_is_readonly});
 
             if (var_nonwritable.find(id) == var_nonwritable.end() && IsWritableDescriptorType(src, insn.word(1))) {
                 *has_writable_descriptor = true;
@@ -938,49 +952,3 @@ static bool DescriptorTypeMatch(shader_module const *module, uint32_t type_id, V
             return false;  // Mismatch
     }
 }
-
-/*
-// For given pipelineLayout verify that the set_layout_node at slot.first
-//  has the requested binding at slot.second and return ptr to that binding
-static VkDescriptorSetLayoutBinding const *GetDescriptorBinding(PIPELINE_LAYOUT_NODE const *pipelineLayout,
-                                                                descriptor_slot_t slot) {
-    if (!pipelineLayout) return nullptr;
-
-    if (slot.first >= pipelineLayout->set_layouts.size()) return nullptr;
-
-    return pipelineLayout->set_layouts[slot.first]->GetDescriptorSetLayoutBindingPtrFromBinding(slot.second);
-}*/
-
-/*
-static void ProcessExecutionModes(shader_module const *src, spirv_inst_iter entrypoint, PIPELINE_STATE *pipeline) {
-    auto entrypoint_id = entrypoint.word(1);
-    bool is_point_mode = false;
-
-    for (auto insn : *src) {
-        if (insn.opcode() == spv::OpExecutionMode && insn.word(1) == entrypoint_id) {
-            switch (insn.word(2)) {
-                case spv::ExecutionModePointMode:
-                    // In tessellation shaders, PointMode is separate and trumps the tessellation topology.
-                    is_point_mode = true;
-                    break;
-
-                case spv::ExecutionModeOutputPoints:
-                    pipeline->topology_at_rasterizer = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-                    break;
-
-                case spv::ExecutionModeIsolines:
-                case spv::ExecutionModeOutputLineStrip:
-                    pipeline->topology_at_rasterizer = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-                    break;
-
-                case spv::ExecutionModeTriangles:
-                case spv::ExecutionModeQuads:
-                case spv::ExecutionModeOutputTriangleStrip:
-                    pipeline->topology_at_rasterizer = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-                    break;
-            }
-        }
-    }
-
-    if (is_point_mode) pipeline->topology_at_rasterizer = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-}*/

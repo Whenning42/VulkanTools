@@ -9,6 +9,7 @@
 #include <string>
 #include "third_party/json.hpp"
 #include <cassert>
+
 using json = nlohmann::json;
 std::vector<VkVizCommandBuffer> LoadFromFile(std::string filename) {
     std::vector<VkVizCommandBuffer> buffers;
@@ -24,23 +25,23 @@ std::vector<VkVizCommandBuffer> LoadFromFile(std::string filename) {
     return buffers;
 }
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    command_buffer_view_(nullptr) // Can't initialize until ui->setupUi is called.
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent),
+      ui(new Ui::MainWindow),
+      command_buffer_tree_(nullptr)  // Can't initialize until ui->setupUi is called.
 {
     ui->setupUi(this);
 
     // Clear any example Command Buffers
-    command_buffer_view_ = CommandBufferView(ui->BufferList);
-    command_buffer_view_.Clear();
+    command_buffer_tree_ = CommandBufferTree(ui->CmdBufferTree);
+    // command_buffer_view_.Clear();
 
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
 
     std::vector<VkVizCommandBuffer> buffers = LoadFromFile("vkviz_frame_start");
     for(const auto& buffer : buffers) {
-        command_buffer_view_.AddCommandBuffer(buffer);
+        command_buffer_tree_.AddCommandBuffer(buffer);
     }
 }
 

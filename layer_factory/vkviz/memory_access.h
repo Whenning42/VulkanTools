@@ -110,7 +110,7 @@ struct ImageAccess {
     VkImage image;
     std::vector<ImageRegion> regions;
 };
-SERIALIZE2(ImageAccess, VkImage, image, std::vector<ImageRegion>, regions);
+SERIALIZE2(ImageAccess, image, regions);
 
 struct BufferRegion {
     VkDeviceSize offset;
@@ -143,7 +143,7 @@ struct BufferAccess {
     VkBuffer buffer;
     std::vector<BufferRegion> regions;
 };
-SERIALIZE2(BufferAccess, VkBuffer, buffer, std::vector<BufferRegion>, regions);
+SERIALIZE2(BufferAccess, buffer, regions);
 
 struct MemoryAccess {
     READ_WRITE read_or_write;
@@ -187,7 +187,7 @@ struct MemoryAccess {
         return Image(rw, image_view.Image(), regionCount, pRegions);
     }
 };
-SERIALIZE4(MemoryAccess, READ_WRITE, read_or_write, MEMORY_TYPE, type, ImageAccess, image_access, BufferAccess, buffer_access);
+SERIALIZE4(MemoryAccess, read_or_write, type, image_access, buffer_access);
 
 template <typename T>
 inline MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {

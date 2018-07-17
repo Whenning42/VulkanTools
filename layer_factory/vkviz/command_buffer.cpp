@@ -202,15 +202,18 @@ void VkVizCommandBuffer::DispatchIndirect(VkBuffer buffer, VkDeviceSize offset) 
 }
 
 // We don't track the regions of the given resources being affected.
-std::vector<MemoryAccess> VkVizCommandBuffer::GraphicsShaderAccesses() {
-    std::vector<MemoryAccess> accesses;
+std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> VkVizCommandBuffer::GraphicsPipelineAccesses() {
+    std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> pipeline_accesses;
+
     const std::vector<PipelineStage> pipeline = device_->GetPipelineStages(bound_graphics_pipeline_);
     for(const auto& stage : pipeline) {
+        std::vector<MemoryAccess> stage_accesses;
+
         for(const DescriptorUse& descriptor_use : stage.descriptor_uses) {
             const std::vector<VkVizDescriptor> descriptors = DescriptorsFromUse(descriptor_use, GRAPHICS);
 
             READ_WRITE read_or_write;
-            if(descriptor_use.storage_class == 0) {
+            if (descriptor_use.is_readonly) {
                 read_or_write = READ;
             } else {
                 read_or_write = WRITE;
@@ -221,27 +224,29 @@ std::vector<MemoryAccess> VkVizCommandBuffer::GraphicsShaderAccesses() {
                     VkImageView image_view = descriptor.ImageView();
                     VkImage image = device_->ImageFromView(image_view);
                     VkImageBlit dummy_blit;
-                    accesses.emplace_back(MemoryAccess::Image(read_or_write, image, 0, &dummy_blit));
+                    stage_accesses.emplace_back(MemoryAccess::Image(read_or_write, image, 0, &dummy_blit));
                 } else if(descriptor.descriptor_type == BUFFER_DESCRIPTOR) {
                     VkBuffer buffer = descriptor.Buffer();
-                    accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
+                    stage_accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
                 } else {
                     VkBufferView buffer_view = descriptor.BufferView();
                     VkBuffer buffer = device_->BufferFromView(buffer_view);
-                    accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
+                    stage_accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
                 }
             }
         }
+
+        pipeline_accesses.emplace_back(std::make_pair(stage.stage_flag, std::move(stage_accesses)));
     }
 
-    return accesses;
+    return pipeline_accesses;
 }
 
 void VkVizCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
     // Reads vertex buffers according to PipelineVertexInputState
     // Runs graphics pipeline shader stages
 
-    commands_.emplace_back(Access(CMD_DRAW, GraphicsShaderAccesses()));
+    commands_.emplace_back(DrawCommand(CMD_DRAW, GraphicsPipelineAccesses()));
 }
 
 void VkVizCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
@@ -250,7 +255,7 @@ void VkVizCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount
     // Reads vertex buffers according to PipelineVertexInputState
     // Runs graphics pipeline shader stages
 
-    commands_.emplace_back(Access(CMD_DRAWINDEXED, GraphicsShaderAccesses()));
+    commands_.emplace_back(DrawCommand(CMD_DRAWINDEXED, GraphicsPipelineAccesses()));
 }
 
 void VkVizCommandBuffer::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) {

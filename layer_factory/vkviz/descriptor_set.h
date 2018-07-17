@@ -13,17 +13,17 @@ enum DescriptorType {UNINITIALIZED_DESCRIPTOR, IMAGE_DESCRIPTOR, BUFFER_DESCRIPT
 struct ImageDescriptor {
     VkImageView image_view;
 };
-SERIALIZE(ImageDescriptor, VkImageView, image_view);
+SERIALIZE(ImageDescriptor, image_view);
 
 struct BufferDescriptor {
     VkBuffer buffer;
 };
-SERIALIZE(BufferDescriptor, VkBuffer, buffer);
+SERIALIZE(BufferDescriptor, buffer);
 
 struct TexelDescriptor {
     VkBufferView buffer_view;
 };
-SERIALIZE(TexelDescriptor, VkBufferView, buffer_view);
+SERIALIZE(TexelDescriptor, buffer_view);
 
 struct VkVizDescriptor{
 
@@ -200,6 +200,6 @@ public:
                type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
     }
 };
-SERIALIZE2(VkVizDescriptorSet, VkDescriptorSet, vk_set_, Set, set_);
+SERIALIZE2(VkVizDescriptorSet, vk_set_, set_);
 
 #endif  // DESCRIPTOR_SET_H

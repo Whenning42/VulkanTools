@@ -119,17 +119,18 @@ class VkVizCommandBuffer {
         }
     }
 
-   std::vector<MemoryAccess> GraphicsShaderAccesses();
+    std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> GraphicsPipelineAccesses();
 
    public:
     VkCommandBuffer handle_;
-    std::vector<Command> commands_;
+    std::vector<CommandWrapper> commands_;
 
     VkVizCommandBuffer() = default;
-    VkVizCommandBuffer(VkCommandBuffer handle, std::vector<Command> commands) : handle_(handle), commands_(commands) {};
+    VkVizCommandBuffer(VkCommandBuffer handle, std::vector<CommandWrapper> commands)
+        : handle_(handle), commands_(std::move(commands)){};
     VkVizCommandBuffer(const VkCommandBuffer commandBuffer, VkCommandBufferLevel level, VkVizDevice* device) : handle_(commandBuffer), level_(level), device_(device) {}
 
-    const std::vector<Command>& Commands() const { return commands_; }
+    const std::vector<CommandWrapper>& Commands() const { return commands_; }
     VkCommandBuffer Handle() const { return handle_; }
     std::string Name() const {
         std::stringstream s;
@@ -192,7 +193,7 @@ class VkVizCommandBuffer {
     void EndDebugUtilsLabelEXT();
     void EndQuery(VkQueryPool queryPool, uint32_t query);
     void EndRenderPass();
-    void ExecuteCommands(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers);
+    void ExecuteCommands(uint32_t commandBufferCount, const VkCommandBuffer* pCommandWrapperBuffers);
     void FillBuffer(VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data);
     void InsertDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo);
     void NextSubpass(VkSubpassContents contents);
@@ -200,7 +201,7 @@ class VkVizCommandBuffer {
                          uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount,
                          const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount,
                          const VkImageMemoryBarrier* pImageMemoryBarriers);
-    void ProcessCommandsNVX(const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo);
+    void ProcessCommandsNVX(const VkCmdProcessCommandsInfoNVX* pProcessCommandWrappersInfo);
     void PushConstants(VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues);
     void PushDescriptorSetKHR(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set,
                               uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites);
@@ -235,7 +236,7 @@ class VkVizCommandBuffer {
     void WriteTimestamp(VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query);
     VkResult QueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 };
-SERIALIZE2(VkVizCommandBuffer, VkCommandBuffer, handle_, std::vector<Command>, commands_);
+SERIALIZE2(VkVizCommandBuffer, handle_, commands_);
 /* CodeGen? */
 
 #endif  // COMMAND_BUFFER_H

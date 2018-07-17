@@ -122,10 +122,10 @@ enum PipelineType {GRAPHICS, COMPUTE};
 
 struct PipelineStage {
     PipelineType type;
-    VkShaderStageFlagBits stage;
+    VkShaderStageFlagBits stage_flag;
     std::vector<DescriptorUse> descriptor_uses;
 };
-SERIALIZE3(PipelineStage, PipelineType, type, VkShaderStageFlagBits, stage, std::vector<DescriptorUse>, descriptor_uses);
+SERIALIZE3(PipelineStage, type, stage_flag, descriptor_uses);
 
 class VkVizDevice {
     VkDevice device_;
@@ -202,7 +202,7 @@ class VkVizDevice {
                 const auto& stage_create_info = pipeline_create_info.pStages[j];
                 PipelineStage stage;
                 stage.type = GRAPHICS;
-                stage.stage = stage_create_info.stage;
+                stage.stage_flag = stage_create_info.stage;
                 stage.descriptor_uses = GetShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
 
                 stages.push_back(stage);
@@ -219,7 +219,7 @@ class VkVizDevice {
 
             PipelineStage stage;
             stage.type = COMPUTE;
-            stage.stage = stage_create_info.stage;
+            stage.stage_flag = stage_create_info.stage;
             stage.descriptor_uses = GetShaderDescriptorUses(shader_create_info_[stage_create_info.module], stage_create_info);
 
             std::vector<PipelineStage> stages = {stage};

@@ -15,172 +15,148 @@
 
 class VkVizPipelineBarrier;
 
-enum class VkVizCommandType {
-    BASIC,
-    ACCESS,
-    INDEX_BUFFER_BIND,
-    VERTEX_BUFFER_BIND,
-    PIPELINE_BARRIER,
-    BIND_DESCRIPTOR_SETS
-};
+enum VkVizCommandType { BASIC, ACCESS, DRAW, INDEX_BUFFER_BIND, VERTEX_BUFFER_BIND, PIPELINE_BARRIER, BIND_DESCRIPTOR_SETS };
 
 struct BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::BASIC; };
-    CMD_TYPE type_ = CMD_NONE;
+    virtual const VkVizCommandType VkVizType() { return VkVizCommandType::BASIC; };
+    CMD_TYPE type = CMD_NONE;
 
-    BasicCommand() : type_(CMD_NONE) {};
-    BasicCommand(CMD_TYPE type) : type_(type){};
-    std::string CmdTypeString() const { return cmdToString(type_);}
+    virtual ~BasicCommand(){};
+    BasicCommand() : type(CMD_NONE){};
+    BasicCommand(CMD_TYPE type) : type(type){};
+
+    // Virtual serialization methods to be overwritten by derived classes with the C_SERIALIZE macros
+    virtual void to_json(json& j) const { j = {{"type", type}}; }
+
+    virtual void from_json(const json& j) { this->type = j["type"].get<CMD_TYPE>(); }
 };
-SERIALIZE(BasicCommand, CMD_TYPE, type_);
 
 struct Access : BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::ACCESS; };
-    std::vector<MemoryAccess> accesses_;
+    const VkVizCommandType VkVizType() override { return VkVizCommandType::ACCESS; };
+    std::vector<MemoryAccess> accesses;
 
     Access() = default;
-    Access(CMD_TYPE type, MemoryAccess access) : BasicCommand(type) { accesses_.push_back(std::move(access)); };
-    Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : BasicCommand(type), accesses_(std::move(accesses)) { };
+    Access(CMD_TYPE type, MemoryAccess access) : BasicCommand(type) { accesses.push_back(std::move(access)); };
+    Access(CMD_TYPE type, std::vector<MemoryAccess> accesses) : BasicCommand(type), accesses(std::move(accesses)){};
 
-    std::string CmdTypeString() const { return cmdToString(type_) + " + causes one or more acesses.";}
+    C_SERIALIZE2(BasicCommand, Access, type, accesses);
 };
-SERIALIZE2(Access, CMD_TYPE, type_, std::vector<MemoryAccess>, accesses_);
+
+struct DrawCommand : BasicCommand {
+    const VkVizCommandType VkVizType() override { return VkVizCommandType::DRAW; };
+    std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> stage_accesses;
+
+    DrawCommand() = default;
+    DrawCommand(CMD_TYPE type, std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> stage_accesses)
+        : BasicCommand(type), stage_accesses(std::move(stage_accesses)) {}
+
+    C_SERIALIZE2(BasicCommand, DrawCommand, type, stage_accesses);
+};
 
 struct IndexBufferBind : BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::INDEX_BUFFER_BIND; };
-    VkBuffer index_buffer_ = nullptr;
+    const VkVizCommandType VkVizType() override { return VkVizCommandType::INDEX_BUFFER_BIND; };
+    VkBuffer index_buffer = nullptr;
 
     IndexBufferBind() = default;
-    IndexBufferBind(CMD_TYPE type, VkBuffer index_buffer) : BasicCommand(type), index_buffer_(index_buffer){};
+    IndexBufferBind(CMD_TYPE type, VkBuffer index_buffer) : BasicCommand(type), index_buffer(index_buffer){};
+
+    C_SERIALIZE2(BasicCommand, IndexBufferBind, type, index_buffer);
 };
-SERIALIZE2(IndexBufferBind, CMD_TYPE, type_, VkBuffer, index_buffer_);
 
 struct VertexBufferBind : BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::VERTEX_BUFFER_BIND; };
-    std::vector<VkBuffer> vertex_buffers_;
+    const VkVizCommandType VkVizType() override { return VkVizCommandType::VERTEX_BUFFER_BIND; };
+    std::vector<VkBuffer> vertex_buffers;
 
     VertexBufferBind() = default;
-    VertexBufferBind(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) : BasicCommand(type), vertex_buffers_(vertex_buffers){};
+    VertexBufferBind(CMD_TYPE type, std::vector<VkBuffer> vertex_buffers) : BasicCommand(type), vertex_buffers(vertex_buffers){};
+
+    C_SERIALIZE2(BasicCommand, VertexBufferBind, type, vertex_buffers);
 };
-SERIALIZE2(VertexBufferBind, CMD_TYPE, type_, std::vector<VkBuffer>, vertex_buffers_);
 
 struct PipelineBarrierCommand : BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::PIPELINE_BARRIER; }
-    VkVizPipelineBarrier barrier_;
+    const VkVizCommandType VkVizType() override { return VkVizCommandType::PIPELINE_BARRIER; }
+    VkVizPipelineBarrier barrier;
 
     PipelineBarrierCommand() = default;
-    PipelineBarrierCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) : BasicCommand(type), barrier_(std::move(barrier)){};
+    PipelineBarrierCommand(CMD_TYPE type, VkVizPipelineBarrier barrier) : BasicCommand(type), barrier(std::move(barrier)){};
+
+    C_SERIALIZE2(BasicCommand, PipelineBarrierCommand, type, barrier);
 };
-SERIALIZE2(PipelineBarrierCommand, CMD_TYPE, type_, VkVizPipelineBarrier, barrier_);
 
+// This class isn't currently used since VkVizCommandBuffers store all the descriptor set use info for a draw calls in the
+// DrawCommand struct.
 struct BindDescriptorSetsCommand : BasicCommand {
-    static const VkVizCommandType VkVizType() { return VkVizCommandType::BIND_DESCRIPTOR_SETS; }
+    /*
+    const VkVizCommandType VkVizType() override { return VkVizCommandType::BIND_DESCRIPTOR_SETS; }
 
-    // Currently stores all bound descriptor sets as opposed to just the changed ones. This allows deserialization to be stateless.
-    std::vector<VkVizDescriptorSet> bound_descriptor_sets_;
+    std::vector<VkVizDescriptorSet> bound_descriptor_sets;
 
     enum GraphicsOrCompute {GRAPHICS, COMPUTE};
     GraphicsOrCompute bind_point;
 
-    BindDescriptorSetsCommand() =  default;
-    BindDescriptorSetsCommand(CMD_TYPE type, std::vector<VkVizDescriptorSet> bind_sets): BasicCommand(type) {
-        for(const auto& set : bind_sets) {
-            bound_descriptor_sets_.push_back(set);
-        }
-    }
+
+    C_SERIALIZE3(BasicCommand, BindDescriptorSetsCommand, type, bound_descriptor_sets, bind_point);*/
+
+    BindDescriptorSetsCommand() = default;
+    BindDescriptorSetsCommand(CMD_TYPE type, std::vector<VkVizDescriptorSet> bind_sets) : BasicCommand(type) {}
 };
-SERIALIZE2(BindDescriptorSetsCommand, CMD_TYPE, type_, std::vector<VkVizDescriptorSet>, bound_descriptor_sets_);
 
-class Command {
-  protected:
-    struct concept {
-        virtual ~concept() {}
-        virtual std::string CmdTypeString() const = 0;
-        virtual VkVizCommandType VkVizType() const = 0;
-        virtual std::unique_ptr<concept> Clone() const = 0;
-        virtual void to_json_(json& j) const = 0;
-    };
-
-    template <typename T>
-    struct model : public concept {
-        static_assert(!std::is_const<T>::value, "Cannot create a Command from a const instance");
-        model() = default;
-        model(const T& other) : data_(other) {}
-        model(T&& other) : data_(std::move(other)) {}
-
-        std::string CmdTypeString() const override { return data_.CmdTypeString(); }
-        std::unique_ptr<concept> Clone() const override {
-            return std::unique_ptr<model>(new model(*this));
-        }
-
-        void to_json_(json& j) const override {
-            to_json(j, data_);
-            j["kVkVizType"] = T::VkVizType();
-        }
-
-        VkVizCommandType VkVizType() const override { return T::VkVizType(); }
-
-        T data_;
-    };
-
+class CommandWrapper {
    public:
-    Command(): impl_(nullptr) {};
-    Command(const Command& other) : impl_(other.impl_->Clone()) {}
-    Command(Command&&) = default;
+    CommandWrapper() : command_(nullptr){};
+    CommandWrapper(CommandWrapper&&) = default;
+    CommandWrapper& operator=(CommandWrapper&&) = default;
 
-    Command& operator=(Command&&) = default;
-    Command& operator=(const Command& c) {
-        impl_ = c.impl_->Clone();
+    template <typename T>
+    CommandWrapper(T&& command) : command_(new T(std::forward<T>(command))) {}
+
+    template <typename T>
+    CommandWrapper& operator=(T&& impl) {
+        command_.reset(new T(std::forward<T>(impl)));
         return *this;
     }
 
-    template <typename T>
-    Command(T&& impl): impl_(new model<std::decay_t<T>>(std::forward<T>(impl))) {
-        //static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
+    VkVizCommandType VkVizType() const { return command_->VkVizType(); }
+
+    void to_json(json& j) const {
+        command_->to_json(j);
+        j["kVkVizType"] = VkVizType();
     }
 
-    template <typename T>
-    Command& operator=(T&& impl) {
-        impl_.reset(new model<std::decay_t<T>>(std::forward<T>(impl)));
-        //static_assert(std::is_base_of<BasicCommand, T>::value, "Commands need to be instances of the BasicCommand class");
-        return *this;
-    }
+    void from_json(const json& j) { command_->from_json(j); }
 
-    std::string CmdTypeString() const { return impl_->CmdTypeString(); }
-    std::string Name() const { return CmdTypeString(); }
-
-    void to_json_(json& j) const {
-        impl_->to_json_(j);
-    }
+    const std::unique_ptr<BasicCommand>& Unwrap() const { return command_; }
 
    protected:
-    std::unique_ptr<concept> impl_;
+    std::unique_ptr<BasicCommand> command_;
 };
-inline void to_json(json& j, const Command& obj) {
-    obj.to_json_(j);
-}
-inline void from_json(const json& j, Command& obj) {
+inline void to_json(json& j, const CommandWrapper& obj) { obj.to_json(j); }
+inline void from_json(const json& j, CommandWrapper& obj) {
     VkVizCommandType type = j["kVkVizType"].get<VkVizCommandType>();
     switch(type) {
         case VkVizCommandType::BASIC:
-            obj = j.get<BasicCommand>();
+            obj = BasicCommand();
             break;
         case VkVizCommandType::ACCESS:
-            obj = j.get<Access>();
+            obj = Access();
+            break;
+        case VkVizCommandType::DRAW:
+            obj = DrawCommand();
             break;
         case VkVizCommandType::INDEX_BUFFER_BIND:
-            obj = j.get<IndexBufferBind>();
+            obj = IndexBufferBind();
             break;
         case VkVizCommandType::VERTEX_BUFFER_BIND:
-            obj = j.get<VertexBufferBind>();
+            obj = VertexBufferBind();
             break;
         case VkVizCommandType::PIPELINE_BARRIER:
-            obj = j.get<PipelineBarrierCommand>();
+            obj = PipelineBarrierCommand();
             break;
         case VkVizCommandType::BIND_DESCRIPTOR_SETS:
-            obj = j.get<BindDescriptorSetsCommand>();
+            obj = BindDescriptorSetsCommand();
             break;
     }
+    obj.from_json(j);
 }
 
 #endif  // COMMAND_H

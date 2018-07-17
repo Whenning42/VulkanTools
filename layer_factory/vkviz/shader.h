@@ -138,9 +138,9 @@ struct shader_module {
 struct DescriptorUse {
     uint32_t set;
     uint32_t binding;
-    uint32_t storage_class;
+    bool is_readonly;
 };
-SERIALIZE3(DescriptorUse, uint32_t, set, uint32_t, binding, uint32_t, storage_class);
+SERIALIZE3(DescriptorUse, set, binding, is_readonly);
 
 std::vector<DescriptorUse> GetShaderDescriptorUses(const VkShaderModuleCreateInfo& shader_create_info, const VkPipelineShaderStageCreateInfo& stage_create_info);
 

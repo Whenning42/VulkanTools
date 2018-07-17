@@ -14,14 +14,14 @@ struct ImageBarrier {
     VkImage image;
     VkImageSubresourceRange subresource_range;
 };
-SERIALIZE(ImageBarrier, VkImage, image);
+SERIALIZE(ImageBarrier, image);
 
 struct BufferBarrier {
     VkBuffer buffer;
     VkDeviceSize offset;
     VkDeviceSize size;
 };
-SERIALIZE3(BufferBarrier, VkBuffer, buffer, VkDeviceSize, offset, VkDeviceSize, size);
+SERIALIZE3(BufferBarrier, buffer, offset, size);
 
 enum BarrierType { GLOBAL, BUFFER, IMAGE };
 struct MemoryBarrier {
@@ -105,6 +105,6 @@ struct VkVizPipelineBarrier {
           dependency_flags(dependencyFlags),
           memory_barriers(barriers) {}
 };
-SERIALIZE4(VkVizPipelineBarrier, VkPipelineStageFlags, src_stage_mask, VkPipelineStageFlags, dst_stage_mask, VkDependencyFlags, dependency_flags, std::vector<MemoryBarrier>, memory_barriers);
+SERIALIZE4(VkVizPipelineBarrier, src_stage_mask, dst_stage_mask, dependency_flags, memory_barriers);
 
 #endif  // MEMORY_BARRIER_H

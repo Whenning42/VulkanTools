@@ -4,8 +4,7 @@
 #include <QMainWindow>
 #include <string>
 
-//#include "command_buffer.h"
-#include "command_buffer_view.h"
+#include "command_buffer_tree.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,11 +18,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
- //   void AddCommandBuffer(const VkVizCommandBuffer& buffer);
-
 private:
     Ui::MainWindow *ui;
-    CommandBufferView command_buffer_view_;
+    CommandBufferTree command_buffer_tree_;
 };
 
 #endif // MAINWINDOW_H
