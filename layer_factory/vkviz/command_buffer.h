@@ -13,6 +13,8 @@
 #include <sstream>
 #include <memory>
 
+/* This is the beginning of an implementation of tracking which images attachments reference. This is necessary to track which
+ * images shaders are writing to and to track which images VkCmdClearColorImage commands affect.
 
 class VkVizAttachment {
     VkVizImageView image_view;
@@ -45,14 +47,14 @@ class VkVizRenderPass {
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkSubpassDescription> subpasses;
     std::vector<VkSubpassDependency> dependencies;
-//    static std::unordered_map<VkRenderPass, VkVizRenderPass*> render_passes_;
+    // static std::unordered_map<VkRenderPass, VkVizRenderPass*> render_passes_;
 
    public:
 
     // Just here for testing
     VkVizRenderPass() {};
 
-//    static VkVizRenderPass& Get(VkRenderPass render_pass) { return *render_passes_[render_pass];};
+    // static VkVizRenderPass& Get(VkRenderPass render_pass) { return *render_passes_[render_pass];};
     VkVizRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkRenderPass* pRenderPass) {
         for (int i = 0; i < pCreateInfo->attachmentCount; ++i) {
             attachments.push_back(pCreateInfo->pAttachments[i]);
@@ -64,7 +66,7 @@ class VkVizRenderPass {
             dependencies.push_back(pCreateInfo->pDependencies[i]);
         }
 
- //       render_passes_[*pRenderPass] = this;
+    // render_passes_[*pRenderPass] = this;
     }
 
     VkSubpassDescription Subpass(size_t index) const {return subpasses[index];}
@@ -87,7 +89,8 @@ class VkVizRenderPassInstance {
    public:
     VkVizRenderPassInstance(const VkRenderPassBeginInfo* pRenderPassBegin)
         : render_pass(VkVizRenderPass()), framebuffer(VkVizFramebuffer()){};
-//        : render_pass(VkVizRenderPass::Get(pRenderPassBegin->renderPass)), framebuffer(VkVizFramebuffer::Get(pRenderPassBegin->framebuffer)){};
+//        : render_pass(VkVizRenderPass::Get(pRenderPassBegin->renderPass)),
+framebuffer(VkVizFramebuffer::Get(pRenderPassBegin->framebuffer)){};
 
     void NextSubpass(VkSubpassContents) { ++current_subpass_index; }
 
@@ -96,6 +99,7 @@ class VkVizRenderPassInstance {
     VkSubpassDescription CurrentSubpass() { return render_pass.Subpass(current_subpass_index); }
 };
 
+*/
 class VkVizCommandBuffer {
     VkVizDevice* device_;
 
@@ -105,11 +109,11 @@ class VkVizCommandBuffer {
     std::vector<VkVizDescriptorSet> compute_descriptor_sets_;
 
     VkCommandBufferLevel level_;
-    std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    int current_render_pass_ = -1;
+    // std::vector<VkVizRenderPassInstance> render_pass_instances_;
 
-    // Looks like spirv doesn't give us the element index?
+    // Looks like spirv can't give which descriptor set binding indices shaders use. Therefore, we only track which sets and
+    // bindings are used, and mark every buffer or image in the given set and binding as being used.
     std::vector<VkVizDescriptor> DescriptorsFromUse(const DescriptorUse& use, PipelineType pipeline_type) {
         std::vector<VkVizDescriptor> out;
         if(pipeline_type == GRAPHICS) {
@@ -132,11 +136,6 @@ class VkVizCommandBuffer {
 
     const std::vector<CommandWrapper>& Commands() const { return commands_; }
     VkCommandBuffer Handle() const { return handle_; }
-    std::string Name() const {
-        std::stringstream s;
-        s << handle_;
-        return s.str();
-    }
 
     // These three functions aren't of the form vkCmd*.
     VkResult Begin();
@@ -154,9 +153,10 @@ class VkVizCommandBuffer {
     void BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets);
     void BlitImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,
                    uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter);
-    std::vector<MemoryAccess> ClearAttachments(VkVizRenderPass render_pass, uint32_t attachment_count,
-                                               const VkClearAttachment* p_attachments, uint32_t rect_count,
-                                               const VkClearRect* p_rects);
+    // More unifinished code for handling VkCmdClearColorImage.
+    // std::vector<MemoryAccess> ClearAttachments(VkVizRenderPass render_pass, uint32_t attachment_count,
+    //                                           const VkClearAttachment* p_attachments, uint32_t rect_count,
+    //                                           const VkClearRect* p_rects);
     void ClearAttachments(uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount,
                           const VkClearRect* pRects);
     void ClearColorImage(VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, uint32_t rangeCount,

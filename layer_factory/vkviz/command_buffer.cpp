@@ -16,8 +16,7 @@ VkResult VkVizCommandBuffer::End() { commands_.emplace_back(BasicCommand(CMD_END
 
 VkResult VkVizCommandBuffer::Reset() {
     commands_.clear();
-    current_render_pass_ = -1;
-    render_pass_instances_.clear();
+    // render_pass_instances_.clear();
 }
 
 void VkVizCommandBuffer::BeginDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo) {
@@ -31,8 +30,7 @@ void VkVizCommandBuffer::BeginQuery(VkQueryPool queryPool, uint32_t query, VkQue
 void VkVizCommandBuffer::BeginRenderPass(const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) {
     commands_.emplace_back(BasicCommand(CMD_BEGINRENDERPASS));
 
-    current_render_pass_ = render_pass_instances_.size() - 1;
-    render_pass_instances_.emplace_back(VkVizRenderPassInstance(pRenderPassBegin));
+    // render_pass_instances_.emplace_back(VkVizRenderPassInstance(pRenderPassBegin));
 }
 
 void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet,
@@ -82,11 +80,11 @@ void VkVizCommandBuffer::BlitImage(VkImage srcImage, VkImageLayout srcImageLayou
     commands_.emplace_back(Access(CMD_BLITIMAGE, {ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
 }
 
+/* Unfinished code for handling VkCmdClearColorImage
 std::vector<MemoryAccess> ClearAttachments(VkVizSubPass sub_pass, uint32_t attachment_count, const VkClearAttachment* p_attachments,
                                            uint32_t rect_count, const VkClearRect* p_rects) {
     std::vector<MemoryAccess> accesses;
 
-    /*
     for (uint32_t i = 0; i < attachment_count; ++i) {
         const VkClearAttachment& clear = p_attachments[i];
 
@@ -104,10 +102,10 @@ std::vector<MemoryAccess> ClearAttachments(VkVizSubPass sub_pass, uint32_t attac
             VkVizImageView& cleared_view = sub_pass.StencilAttachment().ImageView();
             accesses.emplace_back(ImageViewWrite(cleared_view, rect_count, p_rects));
         }
-    }*/
+    }
 
     return accesses;
-}
+}*/
 
 void VkVizCommandBuffer::ClearAttachments(uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount,
                                           const VkClearRect* pRects) {
@@ -152,7 +150,7 @@ void VkVizCommandBuffer::CopyImageToBuffer(VkImage srcImage, VkImageLayout srcIm
 void VkVizCommandBuffer::CopyQueryPoolResults(VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,
                                               VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags) {
     commands_.emplace_back(BasicCommand(CMD_COPYQUERYPOOLRESULTS));
-    // Implement later?
+
     // Read queryPool range
 
     // We don't really know the write size unless we keep track of
@@ -180,28 +178,22 @@ void VkVizCommandBuffer::DebugMarkerInsertEXT(const VkDebugMarkerMarkerInfoEXT* 
 
 void VkVizCommandBuffer::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
     commands_.emplace_back(BasicCommand(CMD_DISPATCH));
-    // Compute pipeline synchronization
 }
 
 void VkVizCommandBuffer::DispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX,
                                       uint32_t groupCountY, uint32_t groupCountZ) {
     commands_.emplace_back(BasicCommand(CMD_DISPATCHBASE));
-    // Compute pipeline synchronization
 }
 
 void VkVizCommandBuffer::DispatchBaseKHR(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX,
                                          uint32_t groupCountY, uint32_t groupCountZ) {
     commands_.emplace_back(BasicCommand(CMD_DISPATCHBASEKHR));
-    // Compute pipeline synchronization
 }
 
 void VkVizCommandBuffer::DispatchIndirect(VkBuffer buffer, VkDeviceSize offset) {
     commands_.emplace_back(BasicCommand(CMD_DISPATCHINDIRECT));
-    // Compute pipeline synchronization
-    // Read buffer
 }
 
-// We don't track the regions of the given resources being affected.
 std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> VkVizCommandBuffer::GraphicsPipelineAccesses() {
     std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> pipeline_accesses;
 
@@ -243,7 +235,7 @@ std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> VkVizCo
 }
 
 void VkVizCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-    // Reads vertex buffers according to PipelineVertexInputState
+    // Reads vertex buffers according to PipelineVertexInputState and bind commands
     // Runs graphics pipeline shader stages
 
     commands_.emplace_back(DrawCommand(CMD_DRAW, GraphicsPipelineAccesses()));
@@ -251,8 +243,8 @@ void VkVizCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint
 
 void VkVizCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
                                      uint32_t firstInstance) {
-    // Read index buffer (bound by CmdBindIndexBuffer, not an arg)
-    // Reads vertex buffers according to PipelineVertexInputState
+    // Read index buffer (bound by CmdBindIndexBuffer)
+    // Reads vertex buffers according to PipelineVertexInputState and bind commands
     // Runs graphics pipeline shader stages
 
     commands_.emplace_back(DrawCommand(CMD_DRAWINDEXED, GraphicsPipelineAccesses()));
@@ -260,29 +252,20 @@ void VkVizCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount
 
 void VkVizCommandBuffer::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) {
     commands_.emplace_back(BasicCommand(CMD_DRAWINDEXEDINDIRECT));
-    // Graphics pipeline synchronization
-    // Read buffer
 }
 
 void VkVizCommandBuffer::DrawIndexedIndirectCountAMD(VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer,
                                                      VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) {
     commands_.emplace_back(BasicCommand(CMD_DRAWINDEXEDINDIRECTCOUNTAMD));
-    // Graphics pipeline synchronization
-    // Read buffer
 }
 
 void VkVizCommandBuffer::DrawIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) {
     commands_.emplace_back(BasicCommand(CMD_DRAWINDIRECT));
-    // Graphics pipeline synchronization
-    // Read buffer
 }
 
 void VkVizCommandBuffer::DrawIndirectCountAMD(VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer,
                                               VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) {
     commands_.emplace_back(BasicCommand(CMD_DRAWINDIRECTCOUNTAMD));
-    // Graphics pipeline synchronization
-    // Read buffer
-    // Read countBuffer
 }
 
 void VkVizCommandBuffer::EndDebugUtilsLabelEXT() {
@@ -299,9 +282,6 @@ void VkVizCommandBuffer::EndRenderPass() {
     commands_.emplace_back(BasicCommand(CMD_ENDRENDERPASS));
 
     // Mark that we are no longer in a renderpass
-    current_render_pass_ = -1;
-
-    // Generate intermediate access info?
 }
 
 void VkVizCommandBuffer::ExecuteCommands(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) {
@@ -358,40 +338,33 @@ void VkVizCommandBuffer::PipelineBarrier(VkPipelineStageFlags srcStageMask, VkPi
 
 void VkVizCommandBuffer::ProcessCommandsNVX(const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) {
     commands_.emplace_back(BasicCommand(CMD_PROCESSCOMMANDSNVX));
-    // NVXCommands maybe not?
 }
 
 void VkVizCommandBuffer::PushConstants(VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size,
                                        const void* pValues) {
     commands_.emplace_back(BasicCommand(CMD_PUSHCONSTANTS));
-    // Write push constants?
 }
 
 void VkVizCommandBuffer::PushDescriptorSetKHR(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set,
                                               uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) {
     commands_.emplace_back(BasicCommand(CMD_PUSHDESCRIPTORSETKHR));
-    // Write descriptor sets?
 }
 
 void VkVizCommandBuffer::PushDescriptorSetWithTemplateKHR(VkDescriptorUpdateTemplate descriptorUpdateTemplate,
                                                           VkPipelineLayout layout, uint32_t set, const void* pData) {
     commands_.emplace_back(BasicCommand(CMD_PUSHDESCRIPTORSETWITHTEMPLATEKHR));
-    // Write descriptor sets?
 }
 
 void VkVizCommandBuffer::ReserveSpaceForCommandsNVX(const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo) {
     commands_.emplace_back(BasicCommand(CMD_RESERVESPACEFORCOMMANDSNVX));
-    // NVXCommands maybe not?
 }
 
 void VkVizCommandBuffer::ResetEvent(VkEvent event, VkPipelineStageFlags stageMask) {
     commands_.emplace_back(BasicCommand(CMD_RESETEVENT));
-    // Write event at stage
 }
 
 void VkVizCommandBuffer::ResetQueryPool(VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) {
     commands_.emplace_back(BasicCommand(CMD_RESETQUERYPOOL));
-    // Write query pool range
 }
 
 void VkVizCommandBuffer::ResolveImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage,
@@ -403,79 +376,64 @@ void VkVizCommandBuffer::ResolveImage(VkImage srcImage, VkImageLayout srcImageLa
 
 void VkVizCommandBuffer::SetBlendConstants(const float blendConstants[4]) {
     commands_.emplace_back(BasicCommand(CMD_SETBLENDCONSTANTS));
-    // Set blend constants
 }
 
 void VkVizCommandBuffer::SetDepthBias(float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) {
     commands_.emplace_back(BasicCommand(CMD_SETDEPTHBIAS));
-    // Set depth bias
 }
 
 void VkVizCommandBuffer::SetDepthBounds(float minDepthBounds, float maxDepthBounds) {
     commands_.emplace_back(BasicCommand(CMD_SETDEPTHBOUNDS));
-    // Set depth bounds
 }
 
 void VkVizCommandBuffer::SetDeviceMask(uint32_t deviceMask) {
     commands_.emplace_back(BasicCommand(CMD_SETDEVICEMASK));
-    // Set device mask
 }
 
 void VkVizCommandBuffer::SetDeviceMaskKHR(uint32_t deviceMask) {
     commands_.emplace_back(BasicCommand(CMD_SETDEVICEMASKKHR));
-    // Set device mask
 }
 
 void VkVizCommandBuffer::SetDiscardRectangleEXT(uint32_t firstDiscardRectangle, uint32_t discardRectangleCount,
                                                 const VkRect2D* pDiscardRectangles) {
     commands_.emplace_back(BasicCommand(CMD_SETDISCARDRECTANGLEEXT));
-    // Set discard rectangle
 }
 
 void VkVizCommandBuffer::SetEvent(VkEvent event, VkPipelineStageFlags stageMask) {
     commands_.emplace_back(BasicCommand(CMD_SETEVENT));
-    // Set event at stage mask
 }
 
 void VkVizCommandBuffer::SetLineWidth(float lineWidth) {
     commands_.emplace_back(BasicCommand(CMD_SETLINEWIDTH));
-    // Set line width
 }
 
 void VkVizCommandBuffer::SetSampleLocationsEXT(const VkSampleLocationsInfoEXT* pSampleLocationsInfo) {
     commands_.emplace_back(BasicCommand(CMD_SETSAMPLELOCATIONSEXT));
-    // Set sample locations
 }
 
 void VkVizCommandBuffer::SetScissor(uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) {
     commands_.emplace_back(BasicCommand(CMD_SETSCISSOR));
-    // Set scissor
 }
 
 void VkVizCommandBuffer::SetStencilCompareMask(VkStencilFaceFlags faceMask, uint32_t compareMask) {
     commands_.emplace_back(BasicCommand(CMD_SETSTENCILCOMPAREMASK));
-    // Set stencil compare
 }
 
 void VkVizCommandBuffer::SetStencilReference(VkStencilFaceFlags faceMask, uint32_t reference) {
     commands_.emplace_back(BasicCommand(CMD_SETSTENCILREFERENCE));
-    // Set stencil reference
 }
 
 void VkVizCommandBuffer::SetStencilWriteMask(VkStencilFaceFlags faceMask, uint32_t writeMask) {
     commands_.emplace_back(BasicCommand(CMD_SETSTENCILWRITEMASK));
-    // Set stencil write mask
 }
 
 void VkVizCommandBuffer::SetViewport(uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) {
     commands_.emplace_back(BasicCommand(CMD_SETVIEWPORT));
-    // Set viewport
 }
 
 void VkVizCommandBuffer::SetViewportWScalingNV(uint32_t firstViewport, uint32_t viewportCount,
                                                const VkViewportWScalingNV* pViewportWScalings) {
     commands_.emplace_back(BasicCommand(CMD_SETVIEWPORTWSCALINGNV));
-    // Set viewport
 }
 
 void VkVizCommandBuffer::UpdateBuffer(VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) {
