@@ -33,7 +33,7 @@ VkResult VkVizCommandBuffer::End() { commands_.emplace_back(BasicCommand(CMD_END
 
 VkResult VkVizCommandBuffer::Reset() {
     commands_.clear();
-    // render_pass_instances_.clear();
+    in_render_pass_instance_ = false;
 }
 
 void VkVizCommandBuffer::BeginDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo) {
@@ -46,8 +46,7 @@ void VkVizCommandBuffer::BeginQuery(VkQueryPool queryPool, uint32_t query, VkQue
 
 void VkVizCommandBuffer::BeginRenderPass(const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) {
     commands_.emplace_back(BasicCommand(CMD_BEGINRENDERPASS));
-
-    // render_pass_instances_.emplace_back(VkVizRenderPassInstance(pRenderPassBegin));
+    in_render_pass_instance_ = true;
 }
 
 void VkVizCommandBuffer::BindDescriptorSets(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet,
@@ -297,8 +296,7 @@ void VkVizCommandBuffer::EndQuery(VkQueryPool queryPool, uint32_t query) {
 
 void VkVizCommandBuffer::EndRenderPass() {
     commands_.emplace_back(BasicCommand(CMD_ENDRENDERPASS));
-
-    // Mark that we are no longer in a renderpass
+    in_render_pass_instance_ = false;
 }
 
 void VkVizCommandBuffer::ExecuteCommands(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) {
@@ -322,35 +320,43 @@ void VkVizCommandBuffer::PipelineBarrier(VkPipelineStageFlags srcStageMask, VkPi
                                          const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount,
                                          const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount,
                                          const VkImageMemoryBarrier* pImageMemoryBarriers) {
+    if (in_render_pass_instance_) {
+        // We aren't trying to handle synchronization inside of render passes yet.
+        commands_.emplace_back(PipelineBarrierCommand(CMD_PIPELINEBARRIER, VkVizPipelineBarrier()));
+        return;
+    }
+
     // Add a pipeline barrier
 
-    // If outside render pass instance, first sync scope is all earlier submitted commands and second scope is all later commands
-    // If inside a render pass instance, the same applies but the scope is limited to the current subpass
+    // If outside render pass, first sync scope is all earlier submitted commands and second scope is all later commands
+    // If inside a render pass, the same applies but the scope is limited to the current subpass
     // In both cases, the sync scopes are limited to the given stage masks in the pipeline
+
+    // If inside a render pass, there can't be buffer memory barriers, and all images in image memory barriers must be attachments
+    // that the framebuffer was created with, and the image must be an attachment in the VkSubpassDescription of the current
+    // subpass.
 
     // Add global, buffer, and image memory barriers
     // Queue family and image format transitions can be ignored?
 
-    std::vector<MemoryBarrier> memory_barriers;
+    std::vector<MemoryBarrier> global_barriers;
     for (int i = 0; i < memoryBarrierCount; ++i) {
-        const VkMemoryBarrier& barrier = pMemoryBarriers[i];
-        memory_barriers.emplace_back(MemoryBarrier::Global(barrier.srcAccessMask, barrier.dstAccessMask));
+        global_barriers.emplace_back(pMemoryBarriers[i]);
     }
 
+    std::vector<BufferBarrier> buffer_barriers;
     for (int i = 0; i < bufferMemoryBarrierCount; ++i) {
-        const VkBufferMemoryBarrier& barrier = pBufferMemoryBarriers[i];
-        memory_barriers.emplace_back(
-            MemoryBarrier::Buffer(barrier.srcAccessMask, barrier.dstAccessMask, barrier.buffer, barrier.offset, barrier.size));
+        buffer_barriers.emplace_back(pBufferMemoryBarriers[i]);
     }
 
+    std::vector<ImageBarrier> image_barriers;
     for (int i = 0; i < imageMemoryBarrierCount; ++i) {
-        const VkImageMemoryBarrier& barrier = pImageMemoryBarriers[i];
-        memory_barriers.emplace_back(
-            MemoryBarrier::Image(barrier.srcAccessMask, barrier.dstAccessMask, barrier.image, barrier.subresourceRange));
+        image_barriers.emplace_back(pImageMemoryBarriers[i]);
     }
 
     commands_.emplace_back(PipelineBarrierCommand(
-        CMD_PIPELINEBARRIER, VkVizPipelineBarrier(srcStageMask, dstStageMask, dependencyFlags, std::move(memory_barriers))));
+        CMD_PIPELINEBARRIER, VkVizPipelineBarrier(srcStageMask, dstStageMask, dependencyFlags, std::move(global_barriers),
+                                                  std::move(buffer_barriers), std::move(image_barriers))));
 }
 
 void VkVizCommandBuffer::ProcessCommandsNVX(const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) {

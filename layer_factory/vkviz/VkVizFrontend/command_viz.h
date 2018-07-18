@@ -33,9 +33,7 @@ std::string PointerToString(void* v) {
 
 QString PointerToQString(void* v) { return QString::fromStdString(PointerToString(v)); }
 
-QString CmdToQString(CMD_TYPE type) { return QString::fromStdString(cmdToString(type)); }
-
-QString StageName(VkShaderStageFlagBits flag) {
+std::string StageName(VkShaderStageFlagBits flag) {
     switch (flag) {
         case VK_SHADER_STAGE_VERTEX_BIT:
             return "Vertex Stage";
@@ -54,9 +52,20 @@ QString StageName(VkShaderStageFlagBits flag) {
     }
 }
 
+QTreeWidgetItem* NewWidget(const std::string& name) {
+    QTreeWidgetItem* widget = new QTreeWidgetItem();
+    widget->setText(0, QString::fromStdString(name));
+    return widget;
+}
+
+QTreeWidgetItem* AddChildWidget(QTreeWidgetItem* parent, const std::string& child_name) {
+    QTreeWidgetItem* child = NewWidget(child_name);
+    parent->addChild(child);
+    return child;
+}
+
 void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses) {
     for (const auto& access : accesses) {
-        QTreeWidgetItem* access_item = new QTreeWidgetItem();
         std::string access_text;
 
         if (access.read_or_write == READ) {
@@ -71,19 +80,14 @@ void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<Memory
             access_text += "Buffer: " + PointerToString(access.buffer_access.buffer);
         }
 
-        access_item->setText(0, QString::fromStdString(access_text));
-        parent->addChild(access_item);
+        AddChildWidget(parent, access_text);
     }
 }
 
 struct BasicCommandViz {
     const std::unique_ptr<BasicCommand>& command;
 
-    virtual QTreeWidgetItem* ToWidget() const {
-        QTreeWidgetItem* command_widget = new QTreeWidgetItem();
-        command_widget->setText(0, CmdToQString(command->type));
-        return command_widget;
-    }
+    virtual QTreeWidgetItem* ToWidget() const { return NewWidget(cmdToString(command->type)); }
 
     BasicCommandViz() = default;
     BasicCommandViz(const std::unique_ptr<BasicCommand>& command) : command(command) {}
@@ -106,13 +110,10 @@ struct DrawCommandViz : BasicCommandViz {
 
     QTreeWidgetItem* ToWidget() const override {
         QTreeWidgetItem* draw_widget = this->BasicCommandViz::ToWidget();
-        for (const auto& stage_access : draw.stage_accesses) {
-            QTreeWidgetItem* stage_widget = new QTreeWidgetItem();
-            QString stage_name = StageName(stage_access.first);
-            stage_widget->setText(0, stage_name);
-            AddMemoryAccessesToParent(stage_widget, stage_access.second);
 
-            draw_widget->addChild(stage_widget);
+        for (const auto& stage_access : draw.stage_accesses) {
+            QTreeWidgetItem* stage_widget = AddChildWidget(draw_widget, StageName(stage_access.first));
+            AddMemoryAccessesToParent(stage_widget, stage_access.second);
         }
         return draw_widget;
     }
@@ -128,10 +129,51 @@ struct IndexBufferBindViz : BasicCommandViz {
 };
 
 struct PipelineBarrierCommandViz : BasicCommandViz {
-    PipelineBarrierCommandViz(const std::unique_ptr<BasicCommand>& c) : BasicCommandViz(c) {
-        // Assert that the command passed in is a PipelineBarrier Command.
-        assert(dynamic_cast<PipelineBarrierCommand*>(c.get()));
+    const PipelineBarrierCommand& barrier_command;
+
+   private:
+    static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) {
+        AddChildWidget(barrier_widget, "Source Access Mask: " + std::to_string(barrier.src_access_mask));
+        AddChildWidget(barrier_widget, "Destination Access Mask: " + std::to_string(barrier.dst_access_mask));
     }
+
+    static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) {
+        AddBarrierInfo(barrier_widget, static_cast<MemoryBarrier>(barrier));
+        AddChildWidget(barrier_widget, "Buffer: " + PointerToString(barrier.buffer));
+    }
+
+    static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) {
+        AddBarrierInfo(barrier_widget, static_cast<MemoryBarrier>(barrier));
+        AddChildWidget(barrier_widget, "Image: " + PointerToString(barrier.image));
+    }
+
+    template <typename T>
+    static QTreeWidgetItem* AddBarriers(QTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
+                                        const std::string& barrier_type) {
+        if (barriers.size() > 0) {
+            QTreeWidgetItem* barriers_widget = AddChildWidget(pipeline_barrier_widget, barrier_type + " Barriers");
+
+            for (uint32_t i = 0; i < barriers.size(); ++i) {
+                std::string barrier_name = barrier_type + " Barrier " + std::to_string(i);
+                QTreeWidgetItem* barrier_widget = AddChildWidget(barriers_widget, barrier_name);
+                AddBarrierInfo(barrier_widget, barriers[i]);
+            }
+        }
+    }
+
+   public:
+    QTreeWidgetItem* ToWidget() const override {
+        QTreeWidgetItem* pipeline_barrier_widget = this->BasicCommandViz::ToWidget();
+
+        AddBarriers(pipeline_barrier_widget, barrier_command.barrier.global_barriers, "Global");
+        AddBarriers(pipeline_barrier_widget, barrier_command.barrier.buffer_barriers, "Buffer");
+        AddBarriers(pipeline_barrier_widget, barrier_command.barrier.image_barriers, "Image");
+
+        return pipeline_barrier_widget;
+    }
+
+    PipelineBarrierCommandViz(const std::unique_ptr<BasicCommand>& c)
+        : BasicCommandViz(c), barrier_command(*dynamic_cast<PipelineBarrierCommand*>(c.get())) {}
 };
 
 struct VertexBufferBindViz : BasicCommandViz {
