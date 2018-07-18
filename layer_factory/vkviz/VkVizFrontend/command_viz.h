@@ -19,6 +19,7 @@
 #define COMMAND_VIZ_H
 
 #include "command.h"
+#include "vk_enum_string_helper.h"
 
 #include <QTreeWidget>
 #include <QString>
@@ -32,25 +33,6 @@ std::string PointerToString(void* v) {
 }
 
 QString PointerToQString(void* v) { return QString::fromStdString(PointerToString(v)); }
-
-std::string StageName(VkShaderStageFlagBits flag) {
-    switch (flag) {
-        case VK_SHADER_STAGE_VERTEX_BIT:
-            return "Vertex Stage";
-        case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-            return "Tessellation Control Stage";
-        case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-            return "Tessellation Evaluation Stage";
-        case VK_SHADER_STAGE_GEOMETRY_BIT:
-            return "Geometry Stage";
-        case VK_SHADER_STAGE_FRAGMENT_BIT:
-            return "Fragment Stage";
-        case VK_SHADER_STAGE_ALL_GRAPHICS:
-            return "All Graphics Stages";
-        case VK_SHADER_STAGE_ALL:
-            return "All Stages";
-    }
-}
 
 QTreeWidgetItem* NewWidget(const std::string& name) {
     QTreeWidgetItem* widget = new QTreeWidgetItem();
@@ -112,7 +94,7 @@ struct DrawCommandViz : BasicCommandViz {
         QTreeWidgetItem* draw_widget = this->BasicCommandViz::ToWidget();
 
         for (const auto& stage_access : draw.stage_accesses) {
-            QTreeWidgetItem* stage_widget = AddChildWidget(draw_widget, StageName(stage_access.first));
+            QTreeWidgetItem* stage_widget = AddChildWidget(draw_widget, string_VkShaderStageFlagBits(stage_access.first));
             AddMemoryAccessesToParent(stage_widget, stage_access.second);
         }
         return draw_widget;
@@ -132,9 +114,40 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
     const PipelineBarrierCommand& barrier_command;
 
    private:
+    static std::vector<std::string> AccessMaskNames(VkAccessFlags bitmask) {
+        std::vector<std::string> set_bits;
+
+        for (uint32_t bit = 0; bit < 32; ++bit) {
+            uint32_t flag = 1 << bit;
+            if (flag & bitmask) {
+                set_bits.push_back(string_VkAccessFlagBits(static_cast<VkAccessFlagBits>(flag)));
+            }
+        }
+        return set_bits;
+    }
+
+    static void AddAccessFlags(QTreeWidgetItem* barrier_widget, VkAccessFlags access_mask, const std::string& src_or_dest) {
+        std::vector<std::string> access_mask_names = AccessMaskNames(access_mask);
+        if (access_mask_names.size() == 0) {
+            access_mask_names.push_back("None");
+        }
+
+        if (access_mask_names.size() == 1) {
+            // If there's only one bit we don't need to make a drop down for it, and can instead display it inline.
+            AddChildWidget(barrier_widget, src_or_dest + " Access Mask: " + access_mask_names[0]);
+        } else {
+            // Otherwise we add the bits to a dropdown.
+            QTreeWidgetItem* access_mask_widget = AddChildWidget(barrier_widget, src_or_dest + " Access Mask");
+
+            for (const auto& access_bit_name : access_mask_names) {
+                AddChildWidget(access_mask_widget, access_bit_name);
+            }
+        }
+    }
+
     static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) {
-        AddChildWidget(barrier_widget, "Source Access Mask: " + std::to_string(barrier.src_access_mask));
-        AddChildWidget(barrier_widget, "Destination Access Mask: " + std::to_string(barrier.dst_access_mask));
+        AddAccessFlags(barrier_widget, barrier.src_access_mask, "Source");
+        AddAccessFlags(barrier_widget, barrier.dst_access_mask, "Destination");
     }
 
     static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) {
@@ -151,11 +164,15 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
     static QTreeWidgetItem* AddBarriers(QTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
                                         const std::string& barrier_type) {
         if (barriers.size() > 0) {
-            QTreeWidgetItem* barriers_widget = AddChildWidget(pipeline_barrier_widget, barrier_type + " Barriers");
+            QTreeWidgetItem* barriers_parent = pipeline_barrier_widget;
+
+            if (barriers.size() > 1) {
+                // If there are multiple barriers of a kind we put them in a dropdown. Otherwise we put them inline.
+                barriers_parent = AddChildWidget(pipeline_barrier_widget, barrier_type + " Barriers");
+            }
 
             for (uint32_t i = 0; i < barriers.size(); ++i) {
-                std::string barrier_name = barrier_type + " Barrier " + std::to_string(i);
-                QTreeWidgetItem* barrier_widget = AddChildWidget(barriers_widget, barrier_name);
+                QTreeWidgetItem* barrier_widget = AddChildWidget(barriers_parent, barrier_type + " Barrier");
                 AddBarrierInfo(barrier_widget, barriers[i]);
             }
         }
