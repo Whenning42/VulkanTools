@@ -114,49 +114,58 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
     const PipelineBarrierCommand& barrier_command;
 
    private:
-    static std::vector<std::string> AccessMaskNames(VkAccessFlags bitmask) {
+    static std::string to_string(VkAccessFlagBits access_flag) { return string_VkAccessFlagBits(access_flag); }
+
+    static std::string to_string(VkPipelineStageFlagBits stage_flag) { return string_VkPipelineStageFlagBits(stage_flag); }
+
+    template <typename MaskType, typename BitType>
+    static std::vector<std::string> MaskNames(MaskType bitmask) {
         std::vector<std::string> set_bits;
 
         for (uint32_t bit = 0; bit < 32; ++bit) {
             uint32_t flag = 1 << bit;
             if (flag & bitmask) {
-                set_bits.push_back(string_VkAccessFlagBits(static_cast<VkAccessFlagBits>(flag)));
+                set_bits.push_back(to_string(static_cast<BitType>(flag)));
             }
         }
         return set_bits;
     }
 
-    static void AddAccessFlags(QTreeWidgetItem* barrier_widget, VkAccessFlags access_mask, const std::string& src_or_dest) {
-        std::vector<std::string> access_mask_names = AccessMaskNames(access_mask);
-        if (access_mask_names.size() == 0) {
-            access_mask_names.push_back("None");
+    template <typename MaskType, typename BitType>
+    static void AddBitmask(QTreeWidgetItem* parent, MaskType mask, const std::string& mask_display_name) {
+        std::vector<std::string> mask_names = MaskNames<MaskType, BitType>(mask);
+        if (mask_names.size() == 0) {
+            mask_names.push_back("None");
         }
 
-        if (access_mask_names.size() == 1) {
+        if (mask_names.size() == 1) {
             // If there's only one bit we don't need to make a drop down for it, and can instead display it inline.
-            AddChildWidget(barrier_widget, src_or_dest + " Access Mask: " + access_mask_names[0]);
+            AddChildWidget(parent, mask_display_name + ": " + mask_names[0]);
         } else {
             // Otherwise we add the bits to a dropdown.
-            QTreeWidgetItem* access_mask_widget = AddChildWidget(barrier_widget, src_or_dest + " Access Mask");
+            QTreeWidgetItem* mask_widget = AddChildWidget(parent, mask_display_name);
 
-            for (const auto& access_bit_name : access_mask_names) {
-                AddChildWidget(access_mask_widget, access_bit_name);
+            for (const auto& bit_name : mask_names) {
+                AddChildWidget(mask_widget, bit_name);
             }
         }
     }
 
-    static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) {
-        AddAccessFlags(barrier_widget, barrier.src_access_mask, "Source");
-        AddAccessFlags(barrier_widget, barrier.dst_access_mask, "Destination");
+    static void AddPipelineStageFlags(QTreeWidgetItem* pipeline_barrier_widget, VkPipelineStageFlags stage_mask,
+                                      const std::string& src_or_dst) {}
+
+    static void AddBarrier(QTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) {
+        AddBitmask<VkAccessFlags, VkAccessFlagBits>(barrier_widget, barrier.src_access_mask, "Source Access Mask");
+        AddBitmask<VkAccessFlags, VkAccessFlagBits>(barrier_widget, barrier.dst_access_mask, "Destination Access Mask");
     }
 
-    static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) {
-        AddBarrierInfo(barrier_widget, static_cast<MemoryBarrier>(barrier));
+    static void AddBarrier(QTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) {
+        AddBarrier(barrier_widget, static_cast<MemoryBarrier>(barrier));
         AddChildWidget(barrier_widget, "Buffer: " + PointerToString(barrier.buffer));
     }
 
-    static void AddBarrierInfo(QTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) {
-        AddBarrierInfo(barrier_widget, static_cast<MemoryBarrier>(barrier));
+    static void AddBarrier(QTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) {
+        AddBarrier(barrier_widget, static_cast<MemoryBarrier>(barrier));
         AddChildWidget(barrier_widget, "Image: " + PointerToString(barrier.image));
     }
 
@@ -173,7 +182,7 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
 
             for (uint32_t i = 0; i < barriers.size(); ++i) {
                 QTreeWidgetItem* barrier_widget = AddChildWidget(barriers_parent, barrier_type + " Barrier");
-                AddBarrierInfo(barrier_widget, barriers[i]);
+                AddBarrier(barrier_widget, barriers[i]);
             }
         }
     }
@@ -182,6 +191,10 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
     QTreeWidgetItem* ToWidget() const override {
         QTreeWidgetItem* pipeline_barrier_widget = this->BasicCommandViz::ToWidget();
 
+        AddBitmask<VkPipelineStageFlags, VkPipelineStageFlagBits>(pipeline_barrier_widget, barrier_command.barrier.src_stage_mask,
+                                                                  "Source Stage Mask");
+        AddBitmask<VkPipelineStageFlags, VkPipelineStageFlagBits>(pipeline_barrier_widget, barrier_command.barrier.dst_stage_mask,
+                                                                  "Destination Stage Mask");
         AddBarriers(pipeline_barrier_widget, barrier_command.barrier.global_barriers, "Global");
         AddBarriers(pipeline_barrier_widget, barrier_command.barrier.buffer_barriers, "Buffer");
         AddBarriers(pipeline_barrier_widget, barrier_command.barrier.image_barriers, "Image");
