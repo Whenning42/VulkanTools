@@ -52,15 +52,6 @@ MainWindow::MainWindow(QWidget* parent)
     // Clear any example Command Buffers
     command_buffer_tree_ = CommandBufferTree(ui->CmdBufferTree);
 
-    QStackedLayout* stacked_layout = new QStackedLayout;
-    ui->ResourceTab->layout()->removeWidget(ui->SyncView);
-    ui->ResourceTab->layout()->removeWidget(ui->PickerWidget);
-    stacked_layout->addWidget(ui->PickerWidget);
-    stacked_layout->addWidget(ui->SyncView);
-    stacked_layout->setStackingMode(QStackedLayout::StackAll);
-    delete ui->ResourceTab->layout();
-    ui->ResourceTab->setLayout(stacked_layout);
-
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
 

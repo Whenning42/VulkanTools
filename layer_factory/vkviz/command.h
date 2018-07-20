@@ -147,7 +147,31 @@ class CommandWrapper {
 
     void from_json(const json& j) { command_->from_json(j); }
 
-    const std::unique_ptr<BasicCommand>& Unwrap() const { return command_; }
+    template<typename T>
+    const T& Unwrap() const { return *dynamic_cast<T*>(command_.get()); }
+
+    template<typename T>
+    void AssertHoldsType() const { assert(dynamic_cast<T*>(command_.get())); }
+
+    bool IsPipelineBarrier() const {
+        return VkVizType() == VkVizCommandType::PIPELINE_BARRIER;
+    }
+
+    std::vector<MemoryAccess> GetAllAccesses() const {
+        if(VkVizType() == VkVizCommandType::ACCESS) {
+            return Unwrap<Access>().accesses;
+        } else if (VkVizType() == VkVizCommandType::DRAW) {
+            std::vector<MemoryAccess> accesses;
+            for(const auto& stage_access : Unwrap<DrawCommand>().stage_accesses) {
+                for(const auto& access : stage_access.second) {
+                    accesses.push_back(access);
+                }
+            }
+            return accesses;
+        }
+
+        return {};
+    }
 
    protected:
     std::unique_ptr<BasicCommand> command_;

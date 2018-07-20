@@ -17,6 +17,7 @@
 
 #include "vkviz.h"
 #include "serialize.h"
+#include "synchronization.h"
 
 #include <algorithm>
 #include <sstream>
@@ -41,6 +42,7 @@ void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPoo
     RemoveCommandBuffers(commandBufferCount, pCommandBuffers);
 }
 
+SyncTracking sync_tracker;
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
     for (uint32_t i = 0; i < submitCount; ++i) {
         for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
@@ -54,9 +56,20 @@ VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const V
             out_file_ << js.dump(2) << std::endl << std::endl;
         }
     }
+
+    // Run synchronization validation
+    std::vector<std::reference_wrapper<VkVizCommandBuffer>> vk_viz_buffers;
+    for (uint32_t i = 0; i < submitCount; ++i) {
+        for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
+            vk_viz_buffers.push_back(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
+        }
+    }
+
+    sync_tracker.AddCommandBuffers(vk_viz_buffers);
 }
 
 VkResult VkViz::PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
+    sync_tracker = SyncTracking();
     out_file_.close();
     out_file_.open("vkviz_frame" + std::to_string(current_frame_));
     current_frame_++;

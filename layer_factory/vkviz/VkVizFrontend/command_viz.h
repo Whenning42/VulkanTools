@@ -67,12 +67,12 @@ void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<Memory
 }
 
 struct BasicCommandViz {
-    const std::unique_ptr<BasicCommand>& command;
+    const BasicCommand& command;
 
-    virtual QTreeWidgetItem* ToWidget() const { return NewWidget(cmdToString(command->type)); }
+    virtual QTreeWidgetItem* ToWidget() const { return NewWidget(cmdToString(command.type)); }
 
     BasicCommandViz() = default;
-    BasicCommandViz(const std::unique_ptr<BasicCommand>& command) : command(command) {}
+    BasicCommandViz(const CommandWrapper& command) : command(command.Unwrap<BasicCommand>()) {}
 };
 
 struct AccessViz : BasicCommandViz {
@@ -84,7 +84,7 @@ struct AccessViz : BasicCommandViz {
         return access_widget;
     }
 
-    AccessViz(const std::unique_ptr<BasicCommand>& c) : BasicCommandViz(c), access(*dynamic_cast<Access*>(c.get())) {}
+    AccessViz(const CommandWrapper& c) : BasicCommandViz(c), access(c.Unwrap<Access>()) {}
 };
 
 struct DrawCommandViz : BasicCommandViz {
@@ -100,13 +100,12 @@ struct DrawCommandViz : BasicCommandViz {
         return draw_widget;
     }
 
-    DrawCommandViz(const std::unique_ptr<BasicCommand>& c) : BasicCommandViz(c), draw(*dynamic_cast<DrawCommand*>(c.get())) {}
+    DrawCommandViz(const CommandWrapper& c) : BasicCommandViz(c), draw(c.Unwrap<DrawCommand>()) {}
 };
 
 struct IndexBufferBindViz : BasicCommandViz {
-    IndexBufferBindViz(const std::unique_ptr<BasicCommand>& c) : BasicCommandViz(c) {
-        // Assert that the command passed in is an IndexBufferBind Command.
-        assert(dynamic_cast<IndexBufferBind*>(c.get()));
+    IndexBufferBindViz(const CommandWrapper& c) : BasicCommandViz(c) {
+        c.AssertHoldsType<IndexBufferBind>();
     }
 };
 
@@ -202,21 +201,19 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
         return pipeline_barrier_widget;
     }
 
-    PipelineBarrierCommandViz(const std::unique_ptr<BasicCommand>& c)
-        : BasicCommandViz(c), barrier_command(*dynamic_cast<PipelineBarrierCommand*>(c.get())) {}
+    PipelineBarrierCommandViz(const CommandWrapper& c)
+        : BasicCommandViz(c), barrier_command(c.Unwrap<PipelineBarrierCommand>()) {}
 };
 
 struct VertexBufferBindViz : BasicCommandViz {
-    VertexBufferBindViz(const std::unique_ptr<BasicCommand>& c) : BasicCommandViz(c) {
-        // Assert that the command passed in is a VertexBufferBind Command.
-        assert(dynamic_cast<VertexBufferBind*>(c.get()));
+    VertexBufferBindViz(const CommandWrapper& c) : BasicCommandViz(c) {
+        c.AssertHoldsType<VertexBufferBind>();
     }
 };
 
 struct BindDescriptorSetsCommandViz : BasicCommandViz {
-    BindDescriptorSetsCommandViz(const std::unique_ptr<BasicCommand>& c) : BasicCommandViz(c) {
-        // Assert that the command passed in is a BindDescriptorSets Command.
-        assert(dynamic_cast<BindDescriptorSetsCommand*>(c.get()));
+    BindDescriptorSetsCommandViz(const CommandWrapper& c) : BasicCommandViz(c) {
+        c.AssertHoldsType<BindDescriptorSetsCommand>();
     }
 };
 
@@ -224,25 +221,25 @@ struct CommandWrapperViz {
     CommandWrapperViz(const CommandWrapper& command) {
         switch (command.VkVizType()) {
             case VkVizCommandType::BASIC:
-                command_ = std::make_unique<BasicCommandViz>(command.Unwrap());
+                command_ = std::make_unique<BasicCommandViz>(command);
                 break;
             case VkVizCommandType::ACCESS:
-                command_ = std::make_unique<AccessViz>(command.Unwrap());
+                command_ = std::make_unique<AccessViz>(command);
                 break;
             case VkVizCommandType::DRAW:
-                command_ = std::make_unique<DrawCommandViz>(command.Unwrap());
+                command_ = std::make_unique<DrawCommandViz>(command);
                 break;
             case VkVizCommandType::INDEX_BUFFER_BIND:
-                command_ = std::make_unique<IndexBufferBindViz>(command.Unwrap());
+                command_ = std::make_unique<IndexBufferBindViz>(command);
                 break;
             case VkVizCommandType::VERTEX_BUFFER_BIND:
-                command_ = std::make_unique<VertexBufferBindViz>(command.Unwrap());
+                command_ = std::make_unique<VertexBufferBindViz>(command);
                 break;
             case VkVizCommandType::PIPELINE_BARRIER:
-                command_ = std::make_unique<PipelineBarrierCommandViz>(command.Unwrap());
+                command_ = std::make_unique<PipelineBarrierCommandViz>(command);
                 break;
             case VkVizCommandType::BIND_DESCRIPTOR_SETS:
-                command_ = std::make_unique<BindDescriptorSetsCommandViz>(command.Unwrap());
+                command_ = std::make_unique<BindDescriptorSetsCommandViz>(command);
                 break;
         }
     }
