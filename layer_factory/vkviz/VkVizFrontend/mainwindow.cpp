@@ -21,11 +21,11 @@
 #include "command_enums.h"
 #include "command_buffer.h"
 
-
 #include <fstream>
 #include <string>
 #include "third_party/json.hpp"
 #include <cassert>
+#include <QStackedLayout>
 
 using json = nlohmann::json;
 std::vector<VkVizCommandBuffer> LoadFromFile(std::string filename) {
@@ -51,7 +51,15 @@ MainWindow::MainWindow(QWidget* parent)
 
     // Clear any example Command Buffers
     command_buffer_tree_ = CommandBufferTree(ui->CmdBufferTree);
-    // command_buffer_view_.Clear();
+
+    QStackedLayout* stacked_layout = new QStackedLayout;
+    ui->ResourceTab->layout()->removeWidget(ui->SyncView);
+    ui->ResourceTab->layout()->removeWidget(ui->PickerWidget);
+    stacked_layout->addWidget(ui->PickerWidget);
+    stacked_layout->addWidget(ui->SyncView);
+    stacked_layout->setStackingMode(QStackedLayout::StackAll);
+    delete ui->ResourceTab->layout();
+    ui->ResourceTab->setLayout(stacked_layout);
 
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
