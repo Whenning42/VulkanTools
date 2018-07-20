@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2018 Google
+/* Copyright (C) 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +15,10 @@
  * Author: William Henning <whenning@google.com>
  */
 
-#ifndef INTERCEPTOR_OBJECTS_H
-#define INTERCEPTOR_OBJECTS_H
+#include "command_buffer_tree.h"
+#include "command_viz.h"
 
-#include "vkviz.h"
-
-#endif  // INTERCEPTOR_OBJECTS_H
+void CommandBufferTree::AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
+    CommandBufferViz viz(command_buffer.Handle(), command_buffer.Commands());
+    buffer_tree_->addTopLevelItem(viz.ToWidget());
+}

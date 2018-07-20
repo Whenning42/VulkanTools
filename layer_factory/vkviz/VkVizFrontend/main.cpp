@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2018 Google
+/* Copyright (C) 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +15,14 @@
  * Author: William Henning <whenning@google.com>
  */
 
-#ifndef INTERCEPTOR_OBJECTS_H
-#define INTERCEPTOR_OBJECTS_H
+#include "mainwindow.h"
+#include <QApplication>
 
-#include "vkviz.h"
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
 
-#endif  // INTERCEPTOR_OBJECTS_H
+    return a.exec();
+}

@@ -158,7 +158,6 @@ class LayerFactoryOutputGenerator(OutputGenerator):
 #include "vk_dispatch_table_helper.h"
 #include "vk_layer_data.h"
 #include "vk_layer_extension_utils.h"
-#include "vk_layer_logging.h"
 #include "vk_extension_helper.h"
 #include "vk_layer_utils.h"
 
@@ -529,8 +528,10 @@ VK_LAYER_EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVe
             if (genOpts.prefixText):
                 for s in genOpts.prefixText:
                     write(s, file=self.outFile)
+            write('#include <unordered_map>', file=self.outFile)
+            write('#include <vector>\n', file=self.outFile)
             write('#include "vulkan/vk_layer.h"', file=self.outFile)
-            write('#include <unordered_map>\n', file=self.outFile)
+            write('#include "vk_layer_logging.h"\n', file=self.outFile)
             write('class layer_factory;', file=self.outFile)
             write('extern std::vector<layer_factory *> global_interceptor_list;', file=self.outFile)
             write('extern debug_report_data *vlf_report_data;\n', file=self.outFile)
@@ -542,6 +543,7 @@ VK_LAYER_EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVe
         self.layer_factory += '// Layer Factory base class definition\n'
         self.layer_factory += 'class layer_factory {\n'
         self.layer_factory += '    public:\n'
+        self.layer_factory += '        layer_factory(const layer_factory&) = delete;\n'
         self.layer_factory += '        layer_factory(layer_factory *interceptor) {\n'
         self.layer_factory += '            global_interceptor_list.emplace_back(this);\n'
         self.layer_factory += '        };\n'

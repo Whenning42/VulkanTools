@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2018 Google
+/* Copyright (C) 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +15,29 @@
  * Author: William Henning <whenning@google.com>
  */
 
-#ifndef INTERCEPTOR_OBJECTS_H
-#define INTERCEPTOR_OBJECTS_H
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
-#include "vkviz.h"
+#include <QMainWindow>
+#include <string>
 
-#endif  // INTERCEPTOR_OBJECTS_H
+#include "command_buffer_tree.h"
+
+namespace Ui {
+class MainWindow;
+}
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit MainWindow(QWidget *parent = 0);
+    ~MainWindow();
+
+private:
+    Ui::MainWindow *ui;
+    CommandBufferTree command_buffer_tree_;
+};
+
+#endif // MAINWINDOW_H
