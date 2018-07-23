@@ -91,7 +91,7 @@ using json = nlohmann::json;
         this->var3 = j[#var3].get<decltype(this->var3)>();                                      \
     }
 
-// Serialization for pointers is to serialize Vulkan handles.
+// Serialization for pointers is needed for Vulkan handles.
 template<typename T>
 void to_json(json& j, T* const & handle) {
     j = {{"handle", reinterpret_cast<std::uintptr_t>(handle)}};

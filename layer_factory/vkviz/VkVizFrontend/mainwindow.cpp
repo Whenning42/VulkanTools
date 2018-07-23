@@ -20,45 +20,99 @@
 
 #include "command_enums.h"
 #include "command_buffer.h"
+#include "frame_capture.h"
+#include "string_helpers.h"
+#include "synchronization.h"
 
 #include <fstream>
 #include <string>
-#include "third_party/json.hpp"
 #include <cassert>
+#include <QCommonStyle>
 #include <QStackedLayout>
 
-using json = nlohmann::json;
-std::vector<VkVizCommandBuffer> LoadFromFile(std::string filename) {
-    std::vector<VkVizCommandBuffer> buffers;
-    json j;
+void MainWindow::ShowSubmittedCommandBufferView() {
+    ui->tabWidget->setCurrentIndex(0);
+}
 
-    std::ifstream file(filename);
-    file >> std::ws;
-    while(file.peek() == '{') {
-        file >> j;
-        buffers.emplace_back(j.get<VkVizCommandBuffer>());
-        file >> std::ws;
+void MainWindow::PopulateSubmittedCommandBufferView() {
+    submitted_command_buffer_view_.Clear();
+    submitted_command_buffer_view_.AddCommandBuffers(capture_.command_buffers);
+}
+
+void MainWindow::ShowResourceView() {
+    ui->tabWidget->setCurrentIndex(1);
+}
+
+void MainWindow::PopulateResourceView(void* resource) {
+    std::uintptr_t resource_val = reinterpret_cast<uintptr_t>(resource);
+    printf("Populating dropdown: %p\n", resource);
+
+    resource_view_.Clear();
+    std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>> buffer_filters = capture_.sync.resource_references[resource_val];
+    resource_view_.AddFilteredCommandBuffers(capture_.command_buffers, buffer_filters);
+}
+
+void MainWindow::OnDropdownSelect(int index) {
+    if(index == 0) {
+        resource_view_.Clear();
+        return;
     }
-    return buffers;
+
+    void* resource = frame_resources_[index-1];
+    PopulateResourceView(resource);
+}
+
+void MainWindow::SetupResourceDropdown() {
+    const auto& resource_references = capture_.sync.resource_references;
+
+    // Add buffers then images to have resources sorted by type.
+    for(MEMORY_TYPE to_add_type : {BUFFER_MEMORY, IMAGE_MEMORY}) {
+        for(const auto& key_value : resource_references) {
+            void* resource = reinterpret_cast<void*>(key_value.first);
+            std::uintptr_t resource_val = key_value.first;
+
+            MEMORY_TYPE type = capture_.sync.resource_types[resource_val];
+            if(type != to_add_type) continue;
+
+            frame_resources_.push_back(resource);
+
+            QString dropdown_text;
+            if(type == BUFFER_MEMORY) {
+                dropdown_text += "Buffer: ";
+            } else {
+                dropdown_text += "Image: ";
+            }
+            dropdown_text += PointerToQString(resource);
+
+            if(capture_.sync.resource_hazards.find(resource_val) != capture_.sync.resource_hazards.end()) {
+                ui->ResourcePicker->insertItem(ui->ResourcePicker->count(), QCommonStyle().standardIcon(QStyle::SP_MessageBoxWarning), dropdown_text);
+            } else {
+                ui->ResourcePicker->insertItem(ui->ResourcePicker->count(), dropdown_text);
+            }
+        }
+    }
 }
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
-      command_buffer_tree_(nullptr)  // Can't initialize until ui->setupUi is called.
+      submitted_command_buffer_view_(/* widget= */nullptr),  // Can't initialize with a widget until ui->setupUi is called.
+      resource_view_(/* widget= */nullptr),  // Can't initialize with a widget until ui->setupUi is called.
+      capture_(FrameCapturer::LoadFile("vkviz_frame_start"))
 {
     ui->setupUi(this);
-
-    // Clear any example Command Buffers
-    command_buffer_tree_ = CommandBufferTree(ui->CmdBufferTree);
 
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
 
-    std::vector<VkVizCommandBuffer> buffers = LoadFromFile("vkviz_frame_start");
-    for(const auto& buffer : buffers) {
-        command_buffer_tree_.AddCommandBuffer(buffer);
-    }
+    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree);
+    resource_view_ = CommandBufferTree(ui->ResourceTree);
+
+    PopulateSubmittedCommandBufferView();
+    ShowSubmittedCommandBufferView();
+
+    SetupResourceDropdown();
+    connect(ui->ResourcePicker, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) { this->OnDropdownSelect(index); });
 }
 
 MainWindow::~MainWindow()

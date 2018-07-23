@@ -41,38 +41,22 @@ void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPoo
                                        const VkCommandBuffer* pCommandBuffers) {
     RemoveCommandBuffers(commandBufferCount, pCommandBuffers);
 }
-
-SyncTracking sync_tracker;
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
-    for (uint32_t i = 0; i < submitCount; ++i) {
-        for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            /* Test code to check serialization/deserialization. Missing expected fields will fail asserts. */
-            std::stringstream stream;
-            json js;
-            stream << json(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
-            std::string debug = stream.str();
-            stream >> js;
-            VkVizCommandBuffer buf = js.get<VkVizCommandBuffer>();
-            out_file_ << js.dump(2) << std::endl << std::endl;
+    if(current_frame_ % 20 == 0) {
+        for (uint32_t i = 0; i < submitCount; ++i) {
+            for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
+                capturer_.AddCommandBuffer(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
+            }
         }
     }
-
-    // Run synchronization validation
-    std::vector<std::reference_wrapper<VkVizCommandBuffer>> vk_viz_buffers;
-    for (uint32_t i = 0; i < submitCount; ++i) {
-        for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-            vk_viz_buffers.push_back(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
-        }
-    }
-
-    sync_tracker.AddCommandBuffers(vk_viz_buffers);
 }
 
 VkResult VkViz::PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
-    sync_tracker = SyncTracking();
-    out_file_.close();
-    out_file_.open("vkviz_frame" + std::to_string(current_frame_));
+    capturer_.End();
+
     current_frame_++;
+
+    capturer_.Begin("vkviz_frame" + std::to_string(current_frame_));
 }
 
 // An instance needs to be declared to turn on a layer in the layer_factory framework

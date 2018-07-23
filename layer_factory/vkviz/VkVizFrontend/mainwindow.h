@@ -22,6 +22,7 @@
 #include <string>
 
 #include "command_buffer_tree.h"
+#include "frame_capture.h"
 
 namespace Ui {
 class MainWindow;
@@ -35,9 +36,24 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void ShowSubmittedCommandBufferView();
+    void PopulateSubmittedCommandBufferView();
+
+    void ShowResourceView();
+    void PopulateResourceView(void* resource);
+
+    void SetupResourceDropdown();
+
+public slots:
+    void OnDropdownSelect(int index);
+
 private:
     Ui::MainWindow *ui;
-    CommandBufferTree command_buffer_tree_;
+
+    FrameCapture capture_;
+    CommandBufferTree submitted_command_buffer_view_;
+    CommandBufferTree resource_view_;
+    std::vector<void*> frame_resources_;
 };
 
 #endif // MAINWINDOW_H

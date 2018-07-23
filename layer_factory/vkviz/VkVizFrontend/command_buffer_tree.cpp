@@ -19,6 +19,30 @@
 #include "command_viz.h"
 
 void CommandBufferTree::AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
-    CommandBufferViz viz(command_buffer.Handle(), command_buffer.Commands());
-    buffer_tree_->addTopLevelItem(viz.ToWidget());
+    CommandBufferViz command_buffer_viz(command_buffer.Handle(), command_buffer.Commands());
+    buffer_tree_->addTopLevelItem(command_buffer_viz.ToWidget());
+}
+
+void CommandBufferTree::AddCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers) {
+    for(const auto& buffer : command_buffers) {
+        AddCommandBuffer(buffer);
+    }
+}
+
+void CommandBufferTree::AddFilteredCommandBuffer(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>& relevant_commands) {
+    CommandBufferViz command_buffer_viz(command_buffer.Handle(), command_buffer.Commands());
+    QTreeWidgetItem* buffer_widget = command_buffer_viz.ToFilteredWidget(relevant_commands);
+    if(buffer_widget) {
+        buffer_tree_->addTopLevelItem(buffer_widget);
+    }
+}
+
+void CommandBufferTree::AddFilteredCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>& buffer_filters) {
+    for(const auto& buffer : command_buffers) {
+        if(buffer_filters.find(buffer.Handle()) != buffer_filters.end()) {
+            AddFilteredCommandBuffer(buffer, buffer_filters.at(buffer.Handle()));
+        } else {
+            AddFilteredCommandBuffer(buffer, {});
+        }
+    }
 }

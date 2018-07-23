@@ -20,6 +20,7 @@
 
 #include <QLabel>
 #include <QTreeWidget>
+#include <unordered_set>
 
 #include "command_buffer.h"
 
@@ -33,10 +34,17 @@ class CommandBufferTree {
     void AddCommand(const CommandWrapper& command);
 
    public:
-    CommandBufferTree(QTreeWidget* buffer_tree) : buffer_tree_(buffer_tree) {}
+    CommandBufferTree(QTreeWidget* tree_widget): buffer_tree_(tree_widget) {}
 
     // Adds the given command buffer to this view.
     void AddCommandBuffer(const VkVizCommandBuffer& command_buffer);
+
+    void AddCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers);
+
+    // Adds the given command buffer to this view.
+    void AddFilteredCommandBuffer(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>& relevant_commands);
+
+    void AddFilteredCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>& resource_buffer_filters);
 
     // Clears all the command buffers from this view.
     void Clear() { buffer_tree_->clear(); }

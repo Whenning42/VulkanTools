@@ -19,26 +19,13 @@
 #define COMMAND_VIZ_H
 
 #include "command.h"
+#include "string_helpers.h"
 #include "vk_enum_string_helper.h"
 
 #include <QTreeWidget>
 #include <QString>
 #include <sstream>
 #include <memory>
-
-std::string PointerToString(void* v) {
-    std::stringstream temp;
-    temp << v;
-    return temp.str();
-}
-
-QString PointerToQString(void* v) { return QString::fromStdString(PointerToString(v)); }
-
-QTreeWidgetItem* NewWidget(const std::string& name) {
-    QTreeWidgetItem* widget = new QTreeWidgetItem();
-    widget->setText(0, QString::fromStdString(name));
-    return widget;
-}
 
 QTreeWidgetItem* AddChildWidget(QTreeWidgetItem* parent, const std::string& child_name) {
     QTreeWidgetItem* child = NewWidget(child_name);
@@ -265,6 +252,30 @@ class CommandBufferViz {
             command_buffer_widget->addChild(command_viz.ToWidget());
         }
         return command_buffer_widget;
+    }
+
+    QTreeWidgetItem* ToFilteredWidget(const std::unordered_set<uint32_t> relevant_commands) {
+        if(relevant_commands.size() > 0) {
+            QTreeWidgetItem* command_buffer_widget = new QTreeWidgetItem();
+            command_buffer_widget->setText(0, PointerToQString(handle_));
+
+            for (uint32_t i=0; i<commands_.size(); ++i) {
+                const auto& command = commands_[i];
+
+                // Global barriers aren't recorded in filters for performance but touch all resources.
+                if(relevant_commands.find(i) != relevant_commands.end() || command.IsGlobalBarrier()) {
+                    CommandWrapperViz command_viz(command);
+                    command_buffer_widget->addChild(command_viz.ToWidget());
+                }
+            }
+
+            QBrush grey(QColor(150, 150, 150));
+            command_buffer_widget->setBackground(0, grey);
+
+            return command_buffer_widget;
+        }
+
+        return nullptr;
     }
 };
 

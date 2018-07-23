@@ -24,8 +24,10 @@
 #include <thread>
 
 #include <vulkan_core.h>
-#include "layer_factory.h"
+
 #include "command_buffer.h"
+#include "frame_capture.h"
+#include "layer_factory.h"
 
 class VkVizDevice;
 
@@ -35,7 +37,7 @@ class VkViz : public layer_factory {
     std::unordered_map<VkCommandBuffer, VkVizCommandBuffer> command_buffer_map_;
     std::unordered_map<VkDevice, VkVizDevice> device_map_;
 
-    std::ofstream out_file_;
+    FrameCapturer capturer_;
     int current_frame_ = 0;
 
     void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers,
@@ -56,7 +58,7 @@ class VkViz : public layer_factory {
 
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this), out_file_("vkviz_frame_start") {};
+    VkViz() : layer_factory(this) {capturer_.Begin("vkviz_frame_start");};
 
     // These functions are all implemented in vkviz.cpp.
     VkResult PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo);

@@ -24,7 +24,14 @@
 QFrame {
   padding: 0px;
 }
-</string>
+
+QTreeWidget {
+  font: 12pt 'Monospace';
+}
+
+QTabWidget {
+	font: 12pt;
+}</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -81,6 +88,15 @@ QFrame {
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
              <widget class="QTabWidget" name="tabWidget">
+              <property name="font">
+               <font>
+                <family>DejaVu Sans</family>
+                <pointsize>12</pointsize>
+                <weight>50</weight>
+                <italic>false</italic>
+                <bold>false</bold>
+               </font>
+              </property>
               <property name="currentIndex">
                <number>1</number>
               </property>
@@ -93,8 +109,11 @@ QFrame {
                  <widget class="QTreeWidget" name="CmdBufferTree">
                   <property name="font">
                    <font>
-                    <family>DejaVu Sans Mono</family>
+                    <family>Monospace</family>
                     <pointsize>12</pointsize>
+                    <weight>50</weight>
+                    <italic>false</italic>
+                    <bold>false</bold>
                    </font>
                   </property>
                   <property name="frameShape">
@@ -140,24 +159,15 @@ QFrame {
                   </item>
                   <item>
                    <widget class="QComboBox" name="ResourcePicker">
+                    <property name="font">
+                     <font>
+                      <family>DejaVu Sans</family>
+                      <pointsize>12</pointsize>
+                     </font>
+                    </property>
                     <item>
                      <property name="text">
-                      <string>Image1</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Image2</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Image3</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Image4</string>
+                      <string>None</string>
                      </property>
                     </item>
                    </widget>
@@ -165,30 +175,10 @@ QFrame {
                  </layout>
                 </item>
                 <item>
-                 <widget class="QTreeWidget" name="SyncView">
+                 <widget class="QTreeWidget" name="ResourceTree">
                   <property name="headerHidden">
                    <bool>true</bool>
                   </property>
-                  <column>
-                   <property name="text">
-                    <string>1</string>
-                   </property>
-                  </column>
-                  <item>
-                   <property name="text">
-                    <string>Columns</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>Are</string>
-                   </property>
-                   <item>
-                    <property name="text">
-                     <string>Fun</string>
-                    </property>
-                   </item>
-                  </item>
                  </widget>
                 </item>
                </layout>

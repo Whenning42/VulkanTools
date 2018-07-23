@@ -157,6 +157,10 @@ class CommandWrapper {
         return VkVizType() == VkVizCommandType::PIPELINE_BARRIER;
     }
 
+    bool IsGlobalBarrier() const {
+        return VkVizType() == VkVizCommandType::PIPELINE_BARRIER && Unwrap<PipelineBarrierCommand>().barrier.global_barriers.size() != 0;
+    }
+
     std::vector<MemoryAccess> GetAllAccesses() const {
         if(VkVizType() == VkVizCommandType::ACCESS) {
             return Unwrap<Access>().accesses;

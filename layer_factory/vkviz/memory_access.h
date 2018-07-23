@@ -174,6 +174,15 @@ struct MemoryAccess {
     MemoryAccess(READ_WRITE rw, ImageAccess image_access)
         : read_or_write(rw), type(IMAGE_MEMORY), image_access(std::move(image_access)) {}
 
+    // Returning a void* only makes sense because we're using the unique objects layer.
+    void* GetHandle() {
+        if(type == BUFFER_MEMORY) {
+            return static_cast<void*>(buffer_access.buffer);
+        } else {
+            return static_cast<void*>(image_access.image);
+        }
+    }
+
     template <typename T>
     static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions) {
         std::vector<ImageRegion> regions;
