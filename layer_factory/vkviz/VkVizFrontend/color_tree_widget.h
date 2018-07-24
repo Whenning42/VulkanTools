@@ -1,71 +1,40 @@
 #ifndef COLOR_TREE_WIDGET_H
 #define COLOR_TREE_WIDGET_H
 
+#include <QObject>
 #include <QTreeWidget>
 
 #include <unordered_map>
 #include <unordered_set>
 
-class ColorTreeNode {
-    std::unordered_set<ColorTreeNode*> children_with_color;
-    QTreeWidgetItem* item;
+struct ColorTreeNode {
+    bool has_multiple_colors;
+    QColor collapse_color;
 
- public:
-    QColor current_color;
-
-    void SetColor(QColor color) {
-        item->setBackground(0, QBrush(color));
-        current_color = color;
-    }
-
-    void SetMultipleColors() {
-        SetColor(QColor(180, 180, 180));
-    }
-
-    void SetClear() {
-        SetColor(QColor(255, 255, 255)); // Clear
-    }
-
-    void AddChildWithColor(ColorTreeNode* child) {
-        children_with_color.insert(child);
-    }
-
-    void RemoveChildWithColor(ColorTreeNode* child) {
-        children_with_color.erase(child);
-    }
-
-    size_t ColoredChildrenCount() {
-        return children_with_color.size();
-    }
-
-    void Collapse(ColorTreeNode* parent) {
-        if(ColoredChildrenCount() == 1) {
-            SetColor((*children_with_color.begin())->GetColor());
-            if(parent) parent->AddChildWithColor(this);
-        } if (ColoredChildrenCount() > 1) {
-            SetMultipleColors();
-            if(parent) parent->AddChildWithColor(this);
-        }
-    }
-
-    void Expand(ColorTreeNode* parent) {
-        SetClear();
-        if(parent) parent->RemoveChildWithColor();
-    }
-
-    ColorTreeNode(QTreeWidgetItem* item): item(item) {}
-    ColorTreeNode(QTreeWidgetItem* item, QColor color): item(item), current_color(color) {}
+    ColorTreeNode(QColor color): has_multiple_colors(false), collapse_color(color) {}
 };
 
 class ColorTree {
     std::unordered_map<QTreeWidgetItem*, ColorTreeNode> node_map;
 
-    void SetupTree(QTreeWidgetItem* q_widget) {
+    void SetupTree(QTreeWidgetItem* q_widget, QColor color) {
         // Check that we haven't gone past the root node.
         if(q_widget) {
             // Add nodes if they don't exist.
             if(node_map.find(q_widget) == node_map.end()) {
-                node_map[q_widget] = ColorTreeNode(q_widget);
+                node_map.emplace(std::make_pair(q_widget, ColorTreeNode(color)));
+            } else {
+                if(node_map.at(q_widget).has_multiple_colors) {
+                    // The tree from here on up has multiple colors and won't be changed by adding a color.
+                    return;
+                } else if(node_map.at(q_widget).collapse_color != color) {
+                    node_map.at(q_widget).collapse_color = QColor(180, 180, 180);
+                    node_map.at(q_widget).has_multiple_colors = true;
+                }
+            }
+
+            if(q_widget->parent()) {
+                SetupTree(q_widget->parent(), color);
             }
         }
     }
@@ -76,7 +45,7 @@ class ColorTree {
             return;
         }
 
-        node_map.at(item).Collapse();
+        SetWidgetStoredColor(item);
     }
 
     void OnExpand(QTreeWidgetItem* item) {
@@ -85,22 +54,26 @@ class ColorTree {
             return;
         }
 
-        node_map.at(item).Expand();
+        SetWidgetClear(item);
     }
 
+    void SetWidgetStoredColor(QTreeWidgetItem* item) {
+        item->setBackground(0, node_map.at(item).collapse_color);
+    }
+
+    void SetWidgetClear(QTreeWidgetItem* item) {
+        item->setBackground(0, QColor(255, 255, 255));
+    }
  public:
     ColorTree(QTreeWidget* tree) {
-        connect(tree, QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);})
-        connect(tree, QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);})
+        QObject::connect(tree, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
+        QObject::connect(tree, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
     }
 
     void AddColoredQWidget(QTreeWidgetItem* q_widget, QColor color) {
-        node_map[q_widget] = ColorTreeNode(q_widget, color);
-        SetupTree(q_widget->parent());
-        if(q_widget->parent()) {
-            node_map[q_widget].AddColoredChild(node_map[q_widget]);
-        }
+        node_map.emplace(std::make_pair(q_widget, ColorTreeNode(color)));
+        SetupTree(q_widget->parent(), color);
     }
-}
+};
 
 #endif  // COLOR_TREE_WIDGET_H
