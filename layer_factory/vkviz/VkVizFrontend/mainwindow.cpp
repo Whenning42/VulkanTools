@@ -96,8 +96,8 @@ void MainWindow::SetupResourceDropdown() {
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
-      submitted_command_buffer_view_(/* widget= */nullptr),  // Can't initialize with a widget until ui->setupUi is called.
-      resource_view_(/* widget= */nullptr),  // Can't initialize with a widget until ui->setupUi is called.
+      submitted_command_buffer_view_(),  // Can't initialize with a widget until ui->setupUi is called.
+      resource_view_(),  // Can't initialize with a widget until ui->setupUi is called.
       capture_(FrameCapturer::LoadFile("vkviz_frame_start"))
 {
     ui->setupUi(this);

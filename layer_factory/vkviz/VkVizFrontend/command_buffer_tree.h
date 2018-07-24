@@ -36,6 +36,7 @@ class CommandBufferTree {
     void AddCommand(const CommandWrapper& command);
 
    public:
+    CommandBufferTree(): buffer_tree_(nullptr), color_tree_() {}
     CommandBufferTree(QTreeWidget* tree_widget): buffer_tree_(tree_widget), color_tree_(buffer_tree_) {}
 
     // Adds the given command buffer to this view.

@@ -65,6 +65,7 @@ class ColorTree {
         item->setBackground(0, QColor(255, 255, 255));
     }
  public:
+    ColorTree() {};
     ColorTree(QTreeWidget* tree) {
         QObject::connect(tree, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
         QObject::connect(tree, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
