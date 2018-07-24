@@ -84,7 +84,7 @@ void MainWindow::SetupResourceDropdown() {
             }
             dropdown_text += PointerToQString(resource);
 
-            if(capture_.sync.resource_hazards.find(resource_val) != capture_.sync.resource_hazards.end()) {
+            if(capture_.sync.ResourceHasHazard(resource)) {
                 ui->ResourcePicker->insertItem(ui->ResourcePicker->count(), QCommonStyle().standardIcon(QStyle::SP_MessageBoxWarning), dropdown_text);
             } else {
                 ui->ResourcePicker->insertItem(ui->ResourcePicker->count(), dropdown_text);

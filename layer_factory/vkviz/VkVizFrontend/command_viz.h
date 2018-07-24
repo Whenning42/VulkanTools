@@ -295,16 +295,22 @@ struct CommandWrapperViz {
 class CommandBufferViz {
     VkCommandBuffer handle_;
     const std::vector<CommandWrapper>& commands_;
+    const SyncTracker& sync_;
 
    public:
-    CommandBufferViz(VkCommandBuffer handle, const std::vector<CommandWrapper>& commands) : handle_(handle), commands_(commands) {}
+    CommandBufferViz(VkCommandBuffer handle, const std::vector<CommandWrapper>& commands, const SyncTracker& sync) : handle_(handle), commands_(commands), sync_(sync) {}
+
+    QTreeWidgetItem* AddCommand(QTreeWidgetItem* command_buffer_widget, const CommandWrapper& command) {
+        CommandWrapperViz command_viz(command);
+        PropagateAddChild(command_buffer_widget, command_viz.ToWidget());
+    }
+
     QTreeWidgetItem* ToWidget() const {
         QTreeWidgetItem* command_buffer_widget = new QTreeWidgetItem();
         command_buffer_widget->setText(0, PointerToQString(handle_));
 
         for (const auto& command : commands_) {
-            CommandWrapperViz command_viz(command);
-            PropagateAddChild(command_buffer_widget, command_viz.ToWidget());
+            AddCommand(command_buffer_widget, command);
         }
         return command_buffer_widget;
     }
@@ -319,8 +325,7 @@ class CommandBufferViz {
 
                 // Global barriers aren't recorded in filters for performance but touch all resources.
                 if(relevant_commands.find(i) != relevant_commands.end() || command.IsGlobalBarrier()) {
-                    CommandWrapperViz command_viz(command);
-                    PropagateAddChild(command_buffer_widget, command_viz.ToWidget());
+                    AddCommand(command_buffer_widget, command);
                 }
             }
 
