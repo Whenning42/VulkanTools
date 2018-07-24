@@ -18,6 +18,7 @@
 #ifndef COMMAND_VIZ_H
 #define COMMAND_VIZ_H
 
+#include "color_tree_widget.h"
 #include "command.h"
 #include "string_helpers.h"
 #include "vk_enum_string_helper.h"
@@ -56,7 +57,7 @@ void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<Memory
 struct BasicCommandViz {
     const BasicCommand& command;
 
-    virtual QTreeWidgetItem* ToWidget() const { return NewWidget(cmdToString(command.type)); }
+    virtual QTreeWidgetItem* ToWidget(ColorTree& color_tree) const { return NewWidget(cmdToString(command.type)); }
 
     BasicCommandViz() = default;
     BasicCommandViz(const CommandWrapper& command) : command(command.Unwrap<BasicCommand>()) {}
@@ -65,8 +66,8 @@ struct BasicCommandViz {
 struct AccessViz : BasicCommandViz {
     const Access& access;
 
-    QTreeWidgetItem* ToWidget() const override {
-        QTreeWidgetItem* access_widget = this->BasicCommandViz::ToWidget();
+    QTreeWidgetItem* ToWidget(ColorTreeToWidget() color_tree) const override {
+        QTreeWidgetItem* access_widget = this->BasicCommandViz::ToWidget(ColorTreeToWidget() color_tree);
         AddMemoryAccessesToParent(access_widget, access.accesses);
         return access_widget;
     }
@@ -77,13 +78,15 @@ struct AccessViz : BasicCommandViz {
 struct DrawCommandViz : BasicCommandViz {
     const DrawCommand& draw;
 
-    QTreeWidgetItem* ToWidget() const override {
-        QTreeWidgetItem* draw_widget = this->BasicCommandViz::ToWidget();
+    QTreeWidgetItem* ToWidget(ColorTreeToWidget() color_tree) const override {
+        QTreeWidgetItem* draw_widget = this->BasicCommandViz::ToWidget(ColorTreeToWidget() color_tree);
 
         for (const auto& stage_access : draw.stage_accesses) {
             QTreeWidgetItem* stage_widget = AddChildWidget(draw_widget, string_VkShaderStageFlagBits(stage_access.first));
+            color_tree.AddColoredQWidget(stage_widget, QColor(255, 100, 100));
             AddMemoryAccessesToParent(stage_widget, stage_access.second);
         }
+
         return draw_widget;
     }
 
@@ -174,8 +177,8 @@ struct PipelineBarrierCommandViz : BasicCommandViz {
     }
 
    public:
-    QTreeWidgetItem* ToWidget() const override {
-        QTreeWidgetItem* pipeline_barrier_widget = this->BasicCommandViz::ToWidget();
+    QTreeWidgetItem* ToWidget(ColorTreeToWidget() color_tree) const override {
+        QTreeWidgetItem* pipeline_barrier_widget = this->BasicCommandViz::ToWidget(ColorTreeToWidget() color_tree);
 
         AddBitmask<VkPipelineStageFlags, VkPipelineStageFlagBits>(pipeline_barrier_widget, barrier_command.barrier.src_stage_mask,
                                                                   "Source Stage Mask");
@@ -231,7 +234,7 @@ struct CommandWrapperViz {
         }
     }
 
-    QTreeWidgetItem* ToWidget() const { return command_->ToWidget(); }
+    QTreeWidgetItem* ToWidget(ColorTreeToWidget() color_tree) const { return command_->ToWidget(ColorTreeToWidget() color_tree); }
 
    protected:
     std::unique_ptr<const BasicCommandViz> command_;
@@ -243,18 +246,18 @@ class CommandBufferViz {
 
    public:
     CommandBufferViz(VkCommandBuffer handle, const std::vector<CommandWrapper>& commands) : handle_(handle), commands_(commands) {}
-    QTreeWidgetItem* ToWidget() const {
+    QTreeWidgetItem* ToWidget(ColorTreeToWidget() color_tree) const {
         QTreeWidgetItem* command_buffer_widget = new QTreeWidgetItem();
         command_buffer_widget->setText(0, PointerToQString(handle_));
 
         for (const auto& command : commands_) {
             CommandWrapperViz command_viz(command);
-            command_buffer_widget->addChild(command_viz.ToWidget());
+            command_buffer_widget->addChild(command_viz.ToWidget(ColorTreeToWidget() color_tree));
         }
         return command_buffer_widget;
     }
 
-    QTreeWidgetItem* ToFilteredWidget(const std::unordered_set<uint32_t> relevant_commands) {
+    QTreeWidgetItem* ToFilteredWidget(const std::unordered_set<uint32_t> relevant_commands, ColorTree& color_tree) {
         if(relevant_commands.size() > 0) {
             QTreeWidgetItem* command_buffer_widget = new QTreeWidgetItem();
             command_buffer_widget->setText(0, PointerToQString(handle_));
@@ -265,7 +268,7 @@ class CommandBufferViz {
                 // Global barriers aren't recorded in filters for performance but touch all resources.
                 if(relevant_commands.find(i) != relevant_commands.end() || command.IsGlobalBarrier()) {
                     CommandWrapperViz command_viz(command);
-                    command_buffer_widget->addChild(command_viz.ToWidget());
+                    command_buffer_widget->addChild(command_viz.ToWidget(color_tree));
                 }
             }
 

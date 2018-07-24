@@ -22,9 +22,11 @@
 #include <QTreeWidget>
 #include <unordered_set>
 
+#include "color_tree_widget.h"
 #include "command_buffer.h"
 
 class CommandBufferTree {
+    ColorTree color_tree_;
     QTreeWidget* buffer_tree_;
 
     // Checks whether this view has any Command Buffers in it.
@@ -34,7 +36,7 @@ class CommandBufferTree {
     void AddCommand(const CommandWrapper& command);
 
    public:
-    CommandBufferTree(QTreeWidget* tree_widget): buffer_tree_(tree_widget) {}
+    CommandBufferTree(QTreeWidget* tree_widget): buffer_tree_(tree_widget), color_tree_(buffer_tree_) {}
 
     // Adds the given command buffer to this view.
     void AddCommandBuffer(const VkVizCommandBuffer& command_buffer);
