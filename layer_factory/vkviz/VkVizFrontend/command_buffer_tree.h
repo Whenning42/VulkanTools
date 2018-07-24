@@ -18,15 +18,16 @@
 #ifndef COMMAND_BUFFER_TREE_H
 #define COMMAND_BUFFER_TREE_H
 
+#include <QColor>
 #include <QLabel>
 #include <QTreeWidget>
+#include <QVariant>
 #include <unordered_set>
 
 #include "color_tree_widget.h"
 #include "command_buffer.h"
 
 class CommandBufferTree {
-    ColorTree color_tree_;
     QTreeWidget* buffer_tree_;
 
     // Checks whether this view has any Command Buffers in it.
@@ -35,9 +36,22 @@ class CommandBufferTree {
     // Adds a new command to the bottom of the last added command buffer.
     void AddCommand(const CommandWrapper& command);
 
+    void OnExpand(QTreeWidgetItem* item) {
+        item->setBackground(0, QColor(255, 255, 255));
+    }
+
+    void OnCollapse(QTreeWidgetItem* item) {
+        if(!item->data(0, 0x100).isNull()) {
+            item->setBackground(0, item->data(0, 0x100).value<QColor>());
+        }
+    }
+
    public:
-    CommandBufferTree(): buffer_tree_(nullptr), color_tree_() {}
-    CommandBufferTree(QTreeWidget* tree_widget): buffer_tree_(tree_widget), color_tree_(buffer_tree_) {}
+    CommandBufferTree(): buffer_tree_(nullptr) {}
+    CommandBufferTree(QTreeWidget* tree_widget): buffer_tree_(tree_widget) {
+        QObject::connect(tree_widget, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
+        QObject::connect(tree_widget, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
+    }
 
     // Adds the given command buffer to this view.
     void AddCommandBuffer(const VkVizCommandBuffer& command_buffer);
