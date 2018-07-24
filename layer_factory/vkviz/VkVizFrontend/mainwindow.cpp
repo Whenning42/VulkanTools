@@ -105,8 +105,8 @@ MainWindow::MainWindow(QWidget* parent)
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
 
-    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree);
-    resource_view_ = CommandBufferTree(ui->ResourceTree);
+    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree, capture_.sync);
+    resource_view_ = CommandBufferTree(ui->ResourceTree, capture_.sync);
 
     PopulateSubmittedCommandBufferView();
     ShowSubmittedCommandBufferView();

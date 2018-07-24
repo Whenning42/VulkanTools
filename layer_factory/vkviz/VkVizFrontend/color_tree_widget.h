@@ -4,8 +4,9 @@
 #include <QColor>
 
 namespace Colors {
-    static const QColor MultipleColors(180, 180, 180);
-    static const QColor HazardSource(255, 100, 100);
+    static const QColor MultipleColors(255, 50, 255);
+    static const QColor kHazardSource(255, 100, 100);
+    static const QColor kHazardDestination(100, 100, 255);
 }
 
 #endif  // COLORS_H

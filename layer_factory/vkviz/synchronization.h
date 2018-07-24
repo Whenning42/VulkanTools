@@ -13,16 +13,6 @@
 struct CommandRef {
     VkCommandBuffer buffer;
     uint32_t command_index;
-
-    bool operator==(const CommandRef& other) const {
-        return (buffer == other.buffer) && (command_index == other.command_index);
-    }
-    struct Hash {
-        // Should probably be an okay hash.
-        size_t operator()(const CommandRef& ref) const {
-            return std::hash<uint64_t>{}(std::hash<uint32_t>{}(ref.command_index) << 20 ^ std::hash<void*>{}(ref.buffer));
-        }
-    };
 };
 SERIALIZE2(CommandRef, buffer, command_index);
 
@@ -41,14 +31,11 @@ struct AccessRef {
             return location_hash ^ (reinterpret_cast<std::uintptr_t>(ref.buffer) << 20);
         }
     };
-
-    CommandRef GetCommandRef() const {
-        return {buffer, command_index};
-    }
 };
 SERIALIZE3(AccessRef, buffer, command_index, access_index);
 
-enum SrcOrDst {
+enum class HazardSrcOrDst {
+    NONE,
     SRC,
     DST
 };
@@ -75,8 +62,9 @@ struct Hazard {
     AccessRef src_access;
     AccessRef dst_access;
     HazardType type;
+    std::uintptr_t resource;
 };
-SERIALIZE3(Hazard, src_access, dst_access, type);
+SERIALIZE4(Hazard, src_access, dst_access, type, resource);
 
 class SyncTracker {
  public:
@@ -86,7 +74,7 @@ class SyncTracker {
 
     // Currently we only track and serialize this info so that it's available to the UI.
     std::unordered_map<std::uintptr_t, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>> resource_references;
-    std::unordered_map<CommandRef, std::unordered_map<uint32_t, Hazard>, CommandRef::Hash> command_hazards;
+    std::unordered_map<AccessRef, Hazard, AccessRef::Hash> hazards;
     std::unordered_set<std::uintptr_t> resources_with_hazards;
     std::unordered_map<std::uintptr_t, MEMORY_TYPE> resource_types;
 
@@ -100,8 +88,8 @@ class SyncTracker {
 
     template<typename T>
     void AddHazard(T* resource, const AccessRef& src_access, const AccessRef& dst_access, const HazardType& hazard_type) {
-        command_hazards[src_access.GetCommandRef()][src_access.access_index] = {src_access, dst_access, hazard_type};
-        command_hazards[src_access.GetCommandRef()][dst_access.access_index] = {src_access, dst_access, hazard_type};
+        hazards[src_access] = {src_access, dst_access, hazard_type, reinterpret_cast<std::uintptr_t>(resource)};
+        hazards[dst_access] = {src_access, dst_access, hazard_type, reinterpret_cast<std::uintptr_t>(resource)};
     }
 
     void CheckForHazard(MemoryAccess access, AccessRef access_location) {
@@ -187,35 +175,28 @@ class SyncTracker {
         }
     }
 
-    bool CommandHasHazards(const CommandRef& command) const {
-        return command_hazards.find(command) != command_hazards.end();
-    }
-
-    std::unordered_map<uint32_t, Hazard>& CommandHazards(const CommandRef& command) {
-        return command_hazards.at(command);
-    }
-
-    const std::unordered_map<uint32_t, Hazard>& CommandHazards(const CommandRef& command) const {
-        CommandHazards(command);
-    }
-
     // Sync logic to enable frontend features.
     bool AccessIsHazard(const AccessRef& access_location) const {
-        if(CommandHasHazards(access_location.GetCommandRef())) {
-            const auto& hazards = CommandHazards(access_location.GetCommandRef());
-            return hazards.find(access_location.access_index) != hazards.end();
-        }
-        return false;
+        return hazards.find(access_location) != hazards.end();
     }
 
-    SrcOrDst HazardIsSrcOrDst(const AccessRef& access_location) const {
-        return CommandHazards(access_location.GetCommandRef()).at(access_location.access_index).src_access == access_location ? SRC : DST;
+    bool AccessIsHazardForResource(void* resource, const AccessRef& access_location) const {
+        if(hazards.find(access_location) != hazards.end()) {
+            return false;
+        } else {
+            return hazards.at(access_location).resource == reinterpret_cast<std::uintptr_t>(resource);
+        }
+    }
+
+    HazardSrcOrDst HazardIsSrcOrDst(const AccessRef& access_location) const {
+        if(!AccessIsHazard(access_location)) return HazardSrcOrDst::NONE;
+        else return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
     }
 
     bool ResourceHasHazard(const void* resource) const {
         return resources_with_hazards.find(reinterpret_cast<std::uintptr_t>(resource)) != resources_with_hazards.end();
     }
 };
-SERIALIZE4(SyncTracker, resource_references, resource_types, command_hazards, resources_with_hazards);
+SERIALIZE4(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards);
 
 #endif  // SYNCHRONIZATION_H
