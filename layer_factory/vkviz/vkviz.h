@@ -26,6 +26,7 @@
 #include <vulkan_core.h>
 
 #include "command_buffer.h"
+#include "device.h"
 #include "frame_capture.h"
 #include "layer_factory.h"
 
@@ -36,8 +37,8 @@ class VkViz : public layer_factory {
     // The layer has a map of all VkViz objects that are dispatchable.
     std::unordered_map<VkCommandBuffer, VkVizCommandBuffer> command_buffer_map_;
     std::unordered_map<VkDevice, VkVizDevice> device_map_;
+    std::unordered_map<VkQueue, VkDevice> queue_map_;
 
-    FrameCapturer capturer_;
     int current_frame_ = 0;
 
     void AddCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers,
@@ -58,7 +59,7 @@ class VkViz : public layer_factory {
 
    public:
     // Constructor for interceptor
-    VkViz() : layer_factory(this) {capturer_.Begin("vkviz_frame_start");};
+    VkViz() : layer_factory(this) {}
 
     // These functions are all implemented in vkviz.cpp.
     VkResult PostCallBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo);
@@ -73,10 +74,11 @@ class VkViz : public layer_factory {
 
     VkResult PostCallCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) {
         device_map_.emplace(*pDevice, VkVizDevice(*pDevice));
+        device_map_.at(*pDevice).capturer.Begin("vkviz_frame_start");
     }
 
-    VkResult PostCallDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) {
-        device_map_.at(device).DebugUtilsObjectNameEXT(pNameInfo);
+    VkResult PostCallSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) {
+        device_map_.at(device).SetDebugUtilsObjectNameEXT(pNameInfo);
     }
 
     // Device create calls here
@@ -142,6 +144,10 @@ class VkViz : public layer_factory {
 
     //void PostCallDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator);
     // end create calls
+
+    void PostCallGetDeviceQueue(VkDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue* pQueue) {
+        queue_map_.emplace(*pQueue, device);
+    }
 
     void vkUpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) {
         device_map_.at(device).UpdateDescriptorSets(descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);

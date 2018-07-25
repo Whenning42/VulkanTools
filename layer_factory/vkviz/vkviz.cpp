@@ -42,21 +42,23 @@ void VkViz::PostCallFreeCommandBuffers(VkDevice device, VkCommandPool commandPoo
     RemoveCommandBuffers(commandBufferCount, pCommandBuffers);
 }
 VkResult VkViz::PostCallQueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
-    if(current_frame_ % 20 == 0) {
-        for (uint32_t i = 0; i < submitCount; ++i) {
-            for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
-                capturer_.AddCommandBuffer(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
-            }
+    VkDevice device = queue_map_.at(queue);
+    FrameCapturer& capturer = device_map_.at(device).capturer;
+
+    for (uint32_t i = 0; i < submitCount; ++i) {
+        for (uint32_t j = 0; j < pSubmits[i].commandBufferCount; ++j) {
+            capturer.AddCommandBuffer(GetCommandBuffer(pSubmits[i].pCommandBuffers[i]));
         }
     }
 }
 
 VkResult VkViz::PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
-    capturer_.End();
+    VkDevice device = queue_map_.at(queue);
+    FrameCapturer& capturer = device_map_.at(device).capturer;
 
+    capturer.End();
     current_frame_++;
-
-    capturer_.Begin("vkviz_frame" + std::to_string(current_frame_));
+    capturer.Begin("vkviz_frame" + std::to_string(current_frame_));
 }
 
 // An instance needs to be declared to turn on a layer in the layer_factory framework

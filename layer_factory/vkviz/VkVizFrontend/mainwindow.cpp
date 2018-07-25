@@ -78,11 +78,10 @@ void MainWindow::SetupResourceDropdown() {
 
             QString dropdown_text;
             if(type == BUFFER_MEMORY) {
-                dropdown_text += "Buffer: ";
+                dropdown_text = QString::fromStdString(capture_.ResourceName(reinterpret_cast<VkBuffer>(resource)));
             } else {
-                dropdown_text += "Image: ";
+                dropdown_text = QString::fromStdString(capture_.ResourceName(reinterpret_cast<VkImage>(resource)));
             }
-            dropdown_text += PointerToQString(resource);
 
             if(capture_.sync.ResourceHasHazard(resource)) {
                 ui->ResourcePicker->insertItem(ui->ResourcePicker->count(), QCommonStyle().standardIcon(QStyle::SP_MessageBoxWarning), dropdown_text);
@@ -105,8 +104,8 @@ MainWindow::MainWindow(QWidget* parent)
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
 
-    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree, capture_.sync);
-    resource_view_ = CommandBufferTree(ui->ResourceTree, capture_.sync);
+    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree, capture_);
+    resource_view_ = CommandBufferTree(ui->ResourceTree, capture_);
 
     PopulateSubmittedCommandBufferView();
     ShowSubmittedCommandBufferView();

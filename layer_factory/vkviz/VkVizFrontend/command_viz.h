@@ -20,7 +20,7 @@
 
 #include "command.h"
 #include "string_helpers.h"
-#include "synchronization.h"
+#include "frame_capture.h"
 
 #include <functional>
 #include <sstream>
@@ -36,7 +36,7 @@ class CommandDrawer {
     // Hazards to draw                          // Map of accesses to hazard types
     // Or accesses touched by pipeline barrier  // Filter of touches for accesses
 
-    const SyncTracker* sync_;
+    const FrameCapture* capture_;
 
     //void* hazard_resource;
     //enum HazardDrawStates {
@@ -45,14 +45,32 @@ class CommandDrawer {
     //    ALL
     //}
 
-    void ColorHazards(QTreeWidgetItem* item, const AccessRef& access_location);
-    void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses, AccessRef* current_access);
+    void ColorHazards(QTreeWidgetItem* item, const AccessRef& access_location) const;
+    void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses,
+                                   AccessRef* current_access) const;
 
-    QTreeWidgetItem* FilteredToWidget(const VkVizCommandBuffer& command_buffer, const std::function<bool(uint32_t command_index, const CommandWrapper& command)>& filter);
+    QTreeWidgetItem* FilteredToWidget(
+        const VkVizCommandBuffer& command_buffer,
+        const std::function<bool(uint32_t command_index, const CommandWrapper& command)>& filter) const;
 
-  public:
+    std::string ResourceName(VkCommandBuffer buffer) const;
+    std::string ResourceName(VkBuffer buffer) const;
+    std::string ResourceName(VkImage image) const;
+
+    template <typename T>
+    std::string HandleName(T* handle) const;
+
+    template <typename T>
+    QTreeWidgetItem* AddBarriers(QTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
+                                 const std::string& barrier_type) const;
+
+    void AddBarrier(QTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const;
+    void AddBarrier(QTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const;
+    void AddBarrier(QTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const;
+
+   public:
     CommandDrawer() {};
-    CommandDrawer(const SyncTracker& sync): sync_(&sync) {};
+    CommandDrawer(const FrameCapture& capture) : capture_(&capture){};
 
     QTreeWidgetItem* ToWidget(const BasicCommand& command, const CommandRef& command_location) const;
     QTreeWidgetItem* ToWidget(const Access& access, const CommandRef& command_location) const;
@@ -111,7 +129,7 @@ struct CommandWrapperViz {
             case VkVizCommandType::PIPELINE_BARRIER:
                 command_ = std::make_unique<PipelineBarrierCommandViz>(command);
                 break;
-            defualt:
+            default:
                 command_ = std::make_unique<BasicCommandViz>(command);
                 break;
         }

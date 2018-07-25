@@ -2,6 +2,7 @@
 #define SYNCHRONIZATION_H
 
 #include "command_buffer.h"
+#include "memory_access.h"
 #include "memory_barrier.h"
 #include "serialize.h"
 

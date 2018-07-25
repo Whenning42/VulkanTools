@@ -25,6 +25,7 @@
 #include <vector>
 #include <cstdint>
 
+#include "descriptor_set.h"
 #include "command_enums.h"
 #include "serialize.h"
 #include "memory_barrier.h"

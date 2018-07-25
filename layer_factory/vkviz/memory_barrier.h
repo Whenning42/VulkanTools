@@ -24,7 +24,6 @@
 #include <cassert>
 #include <vector>
 
-#include "device.h"
 #include "serialize.h"
 
 struct MemoryBarrier {

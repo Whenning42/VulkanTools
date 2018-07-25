@@ -1,7 +1,6 @@
 // *** THIS FILE IS GENERATED - DO NOT EDIT ***
 // See helper_file_generator.py for modifications
 
-
 /***************************************************************************
  *
  * Copyright (c) 2015-2017 The Khronos Group Inc.
@@ -29,18 +28,15 @@
  *
  ****************************************************************************/
 
-
 #pragma once
 #ifdef _WIN32
-#pragma warning( disable : 4065 )
+#pragma warning(disable : 4065)
 #endif
 
 #include <vulkan/vulkan_core.h>
 
-static inline const char* string_VkPipelineCacheHeaderVersion(VkPipelineCacheHeaderVersion input_value)
-{
-    switch ((VkPipelineCacheHeaderVersion)input_value)
-    {
+static inline const char* string_VkPipelineCacheHeaderVersion(VkPipelineCacheHeaderVersion input_value) {
+    switch ((VkPipelineCacheHeaderVersion)input_value) {
         case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:
             return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
         default:
@@ -48,10 +44,8 @@ static inline const char* string_VkPipelineCacheHeaderVersion(VkPipelineCacheHea
     }
 }
 
-static inline const char* string_VkResult(VkResult input_value)
-{
-    switch ((VkResult)input_value)
-    {
+static inline const char* string_VkResult(VkResult input_value) {
+    switch ((VkResult)input_value) {
         case VK_ERROR_FEATURE_NOT_PRESENT:
             return "VK_ERROR_FEATURE_NOT_PRESENT";
         case VK_INCOMPLETE:
@@ -113,10 +107,8 @@ static inline const char* string_VkResult(VkResult input_value)
     }
 }
 
-static inline const char* string_VkStructureType(VkStructureType input_value)
-{
-    switch ((VkStructureType)input_value)
-    {
+static inline const char* string_VkStructureType(VkStructureType input_value) {
+    switch ((VkStructureType)input_value) {
         case VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT:
             return "VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT";
         case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO:
@@ -562,10 +554,8 @@ static inline const char* string_VkStructureType(VkStructureType input_value)
     }
 }
 
-static inline const char* string_VkSystemAllocationScope(VkSystemAllocationScope input_value)
-{
-    switch ((VkSystemAllocationScope)input_value)
-    {
+static inline const char* string_VkSystemAllocationScope(VkSystemAllocationScope input_value) {
+    switch ((VkSystemAllocationScope)input_value) {
         case VK_SYSTEM_ALLOCATION_SCOPE_CACHE:
             return "VK_SYSTEM_ALLOCATION_SCOPE_CACHE";
         case VK_SYSTEM_ALLOCATION_SCOPE_COMMAND:
@@ -581,10 +571,8 @@ static inline const char* string_VkSystemAllocationScope(VkSystemAllocationScope
     }
 }
 
-static inline const char* string_VkInternalAllocationType(VkInternalAllocationType input_value)
-{
-    switch ((VkInternalAllocationType)input_value)
-    {
+static inline const char* string_VkInternalAllocationType(VkInternalAllocationType input_value) {
+    switch ((VkInternalAllocationType)input_value) {
         case VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE:
             return "VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE";
         default:
@@ -592,10 +580,8 @@ static inline const char* string_VkInternalAllocationType(VkInternalAllocationTy
     }
 }
 
-static inline const char* string_VkFormat(VkFormat input_value)
-{
-    switch ((VkFormat)input_value)
-    {
+static inline const char* string_VkFormat(VkFormat input_value) {
+    switch ((VkFormat)input_value) {
         case VK_FORMAT_R32_SFLOAT:
             return "VK_FORMAT_R32_SFLOAT";
         case VK_FORMAT_R16G16B16A16_UNORM:
@@ -1055,10 +1041,8 @@ static inline const char* string_VkFormat(VkFormat input_value)
     }
 }
 
-static inline const char* string_VkFormatFeatureFlagBits(VkFormatFeatureFlagBits input_value)
-{
-    switch ((VkFormatFeatureFlagBits)input_value)
-    {
+static inline const char* string_VkFormatFeatureFlagBits(VkFormatFeatureFlagBits input_value) {
+    switch ((VkFormatFeatureFlagBits)input_value) {
         case VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT:
             return "VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT";
         case VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT:
@@ -1112,10 +1096,8 @@ static inline const char* string_VkFormatFeatureFlagBits(VkFormatFeatureFlagBits
     }
 }
 
-static inline const char* string_VkImageType(VkImageType input_value)
-{
-    switch ((VkImageType)input_value)
-    {
+static inline const char* string_VkImageType(VkImageType input_value) {
+    switch ((VkImageType)input_value) {
         case VK_IMAGE_TYPE_3D:
             return "VK_IMAGE_TYPE_3D";
         case VK_IMAGE_TYPE_2D:
@@ -1127,10 +1109,8 @@ static inline const char* string_VkImageType(VkImageType input_value)
     }
 }
 
-static inline const char* string_VkImageTiling(VkImageTiling input_value)
-{
-    switch ((VkImageTiling)input_value)
-    {
+static inline const char* string_VkImageTiling(VkImageTiling input_value) {
+    switch ((VkImageTiling)input_value) {
         case VK_IMAGE_TILING_LINEAR:
             return "VK_IMAGE_TILING_LINEAR";
         case VK_IMAGE_TILING_OPTIMAL:
@@ -1140,10 +1120,8 @@ static inline const char* string_VkImageTiling(VkImageTiling input_value)
     }
 }
 
-static inline const char* string_VkImageUsageFlagBits(VkImageUsageFlagBits input_value)
-{
-    switch ((VkImageUsageFlagBits)input_value)
-    {
+static inline const char* string_VkImageUsageFlagBits(VkImageUsageFlagBits input_value) {
+    switch ((VkImageUsageFlagBits)input_value) {
         case VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT:
             return "VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT";
         case VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT:
@@ -1165,10 +1143,8 @@ static inline const char* string_VkImageUsageFlagBits(VkImageUsageFlagBits input
     }
 }
 
-static inline const char* string_VkImageCreateFlagBits(VkImageCreateFlagBits input_value)
-{
-    switch ((VkImageCreateFlagBits)input_value)
-    {
+static inline const char* string_VkImageCreateFlagBits(VkImageCreateFlagBits input_value) {
+    switch ((VkImageCreateFlagBits)input_value) {
         case VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT:
             return "VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT";
         case VK_IMAGE_CREATE_SPARSE_BINDING_BIT:
@@ -1200,10 +1176,8 @@ static inline const char* string_VkImageCreateFlagBits(VkImageCreateFlagBits inp
     }
 }
 
-static inline const char* string_VkSampleCountFlagBits(VkSampleCountFlagBits input_value)
-{
-    switch ((VkSampleCountFlagBits)input_value)
-    {
+static inline const char* string_VkSampleCountFlagBits(VkSampleCountFlagBits input_value) {
+    switch ((VkSampleCountFlagBits)input_value) {
         case VK_SAMPLE_COUNT_16_BIT:
             return "VK_SAMPLE_COUNT_16_BIT";
         case VK_SAMPLE_COUNT_4_BIT:
@@ -1223,10 +1197,8 @@ static inline const char* string_VkSampleCountFlagBits(VkSampleCountFlagBits inp
     }
 }
 
-static inline const char* string_VkPhysicalDeviceType(VkPhysicalDeviceType input_value)
-{
-    switch ((VkPhysicalDeviceType)input_value)
-    {
+static inline const char* string_VkPhysicalDeviceType(VkPhysicalDeviceType input_value) {
+    switch ((VkPhysicalDeviceType)input_value) {
         case VK_PHYSICAL_DEVICE_TYPE_CPU:
             return "VK_PHYSICAL_DEVICE_TYPE_CPU";
         case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
@@ -1242,10 +1214,8 @@ static inline const char* string_VkPhysicalDeviceType(VkPhysicalDeviceType input
     }
 }
 
-static inline const char* string_VkQueueFlagBits(VkQueueFlagBits input_value)
-{
-    switch ((VkQueueFlagBits)input_value)
-    {
+static inline const char* string_VkQueueFlagBits(VkQueueFlagBits input_value) {
+    switch ((VkQueueFlagBits)input_value) {
         case VK_QUEUE_COMPUTE_BIT:
             return "VK_QUEUE_COMPUTE_BIT";
         case VK_QUEUE_GRAPHICS_BIT:
@@ -1261,10 +1231,8 @@ static inline const char* string_VkQueueFlagBits(VkQueueFlagBits input_value)
     }
 }
 
-static inline const char* string_VkMemoryPropertyFlagBits(VkMemoryPropertyFlagBits input_value)
-{
-    switch ((VkMemoryPropertyFlagBits)input_value)
-    {
+static inline const char* string_VkMemoryPropertyFlagBits(VkMemoryPropertyFlagBits input_value) {
+    switch ((VkMemoryPropertyFlagBits)input_value) {
         case VK_MEMORY_PROPERTY_PROTECTED_BIT:
             return "VK_MEMORY_PROPERTY_PROTECTED_BIT";
         case VK_MEMORY_PROPERTY_HOST_COHERENT_BIT:
@@ -1282,10 +1250,8 @@ static inline const char* string_VkMemoryPropertyFlagBits(VkMemoryPropertyFlagBi
     }
 }
 
-static inline const char* string_VkMemoryHeapFlagBits(VkMemoryHeapFlagBits input_value)
-{
-    switch ((VkMemoryHeapFlagBits)input_value)
-    {
+static inline const char* string_VkMemoryHeapFlagBits(VkMemoryHeapFlagBits input_value) {
+    switch ((VkMemoryHeapFlagBits)input_value) {
         case VK_MEMORY_HEAP_MULTI_INSTANCE_BIT:
             return "VK_MEMORY_HEAP_MULTI_INSTANCE_BIT";
         case VK_MEMORY_HEAP_DEVICE_LOCAL_BIT:
@@ -1295,10 +1261,8 @@ static inline const char* string_VkMemoryHeapFlagBits(VkMemoryHeapFlagBits input
     }
 }
 
-static inline const char* string_VkDeviceQueueCreateFlagBits(VkDeviceQueueCreateFlagBits input_value)
-{
-    switch ((VkDeviceQueueCreateFlagBits)input_value)
-    {
+static inline const char* string_VkDeviceQueueCreateFlagBits(VkDeviceQueueCreateFlagBits input_value) {
+    switch ((VkDeviceQueueCreateFlagBits)input_value) {
         case VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT:
             return "VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT";
         default:
@@ -1306,10 +1270,8 @@ static inline const char* string_VkDeviceQueueCreateFlagBits(VkDeviceQueueCreate
     }
 }
 
-static inline const char* string_VkPipelineStageFlagBits(VkPipelineStageFlagBits input_value)
-{
-    switch ((VkPipelineStageFlagBits)input_value)
-    {
+static inline const char* string_VkPipelineStageFlagBits(VkPipelineStageFlagBits input_value) {
+    switch ((VkPipelineStageFlagBits)input_value) {
         case VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT:
             return "VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT";
         case VK_PIPELINE_STAGE_ALL_COMMANDS_BIT:
@@ -1351,10 +1313,8 @@ static inline const char* string_VkPipelineStageFlagBits(VkPipelineStageFlagBits
     }
 }
 
-static inline const char* string_VkImageAspectFlagBits(VkImageAspectFlagBits input_value)
-{
-    switch ((VkImageAspectFlagBits)input_value)
-    {
+static inline const char* string_VkImageAspectFlagBits(VkImageAspectFlagBits input_value) {
+    switch ((VkImageAspectFlagBits)input_value) {
         case VK_IMAGE_ASPECT_PLANE_1_BIT:
             return "VK_IMAGE_ASPECT_PLANE_1_BIT";
         case VK_IMAGE_ASPECT_PLANE_2_BIT:
@@ -1374,10 +1334,8 @@ static inline const char* string_VkImageAspectFlagBits(VkImageAspectFlagBits inp
     }
 }
 
-static inline const char* string_VkSparseImageFormatFlagBits(VkSparseImageFormatFlagBits input_value)
-{
-    switch ((VkSparseImageFormatFlagBits)input_value)
-    {
+static inline const char* string_VkSparseImageFormatFlagBits(VkSparseImageFormatFlagBits input_value) {
+    switch ((VkSparseImageFormatFlagBits)input_value) {
         case VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT:
             return "VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT";
         case VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT:
@@ -1389,10 +1347,8 @@ static inline const char* string_VkSparseImageFormatFlagBits(VkSparseImageFormat
     }
 }
 
-static inline const char* string_VkSparseMemoryBindFlagBits(VkSparseMemoryBindFlagBits input_value)
-{
-    switch ((VkSparseMemoryBindFlagBits)input_value)
-    {
+static inline const char* string_VkSparseMemoryBindFlagBits(VkSparseMemoryBindFlagBits input_value) {
+    switch ((VkSparseMemoryBindFlagBits)input_value) {
         case VK_SPARSE_MEMORY_BIND_METADATA_BIT:
             return "VK_SPARSE_MEMORY_BIND_METADATA_BIT";
         default:
@@ -1400,10 +1356,8 @@ static inline const char* string_VkSparseMemoryBindFlagBits(VkSparseMemoryBindFl
     }
 }
 
-static inline const char* string_VkFenceCreateFlagBits(VkFenceCreateFlagBits input_value)
-{
-    switch ((VkFenceCreateFlagBits)input_value)
-    {
+static inline const char* string_VkFenceCreateFlagBits(VkFenceCreateFlagBits input_value) {
+    switch ((VkFenceCreateFlagBits)input_value) {
         case VK_FENCE_CREATE_SIGNALED_BIT:
             return "VK_FENCE_CREATE_SIGNALED_BIT";
         default:
@@ -1411,10 +1365,8 @@ static inline const char* string_VkFenceCreateFlagBits(VkFenceCreateFlagBits inp
     }
 }
 
-static inline const char* string_VkQueryType(VkQueryType input_value)
-{
-    switch ((VkQueryType)input_value)
-    {
+static inline const char* string_VkQueryType(VkQueryType input_value) {
+    switch ((VkQueryType)input_value) {
         case VK_QUERY_TYPE_PIPELINE_STATISTICS:
             return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
         case VK_QUERY_TYPE_TIMESTAMP:
@@ -1426,10 +1378,8 @@ static inline const char* string_VkQueryType(VkQueryType input_value)
     }
 }
 
-static inline const char* string_VkQueryPipelineStatisticFlagBits(VkQueryPipelineStatisticFlagBits input_value)
-{
-    switch ((VkQueryPipelineStatisticFlagBits)input_value)
-    {
+static inline const char* string_VkQueryPipelineStatisticFlagBits(VkQueryPipelineStatisticFlagBits input_value) {
+    switch ((VkQueryPipelineStatisticFlagBits)input_value) {
         case VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT:
             return "VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT";
         case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
@@ -1457,10 +1407,8 @@ static inline const char* string_VkQueryPipelineStatisticFlagBits(VkQueryPipelin
     }
 }
 
-static inline const char* string_VkQueryResultFlagBits(VkQueryResultFlagBits input_value)
-{
-    switch ((VkQueryResultFlagBits)input_value)
-    {
+static inline const char* string_VkQueryResultFlagBits(VkQueryResultFlagBits input_value) {
+    switch ((VkQueryResultFlagBits)input_value) {
         case VK_QUERY_RESULT_64_BIT:
             return "VK_QUERY_RESULT_64_BIT";
         case VK_QUERY_RESULT_WAIT_BIT:
@@ -1474,10 +1422,8 @@ static inline const char* string_VkQueryResultFlagBits(VkQueryResultFlagBits inp
     }
 }
 
-static inline const char* string_VkBufferCreateFlagBits(VkBufferCreateFlagBits input_value)
-{
-    switch ((VkBufferCreateFlagBits)input_value)
-    {
+static inline const char* string_VkBufferCreateFlagBits(VkBufferCreateFlagBits input_value) {
+    switch ((VkBufferCreateFlagBits)input_value) {
         case VK_BUFFER_CREATE_PROTECTED_BIT:
             return "VK_BUFFER_CREATE_PROTECTED_BIT";
         case VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT:
@@ -1491,10 +1437,8 @@ static inline const char* string_VkBufferCreateFlagBits(VkBufferCreateFlagBits i
     }
 }
 
-static inline const char* string_VkBufferUsageFlagBits(VkBufferUsageFlagBits input_value)
-{
-    switch ((VkBufferUsageFlagBits)input_value)
-    {
+static inline const char* string_VkBufferUsageFlagBits(VkBufferUsageFlagBits input_value) {
+    switch ((VkBufferUsageFlagBits)input_value) {
         case VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT:
             return "VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT";
         case VK_BUFFER_USAGE_INDEX_BUFFER_BIT:
@@ -1518,10 +1462,8 @@ static inline const char* string_VkBufferUsageFlagBits(VkBufferUsageFlagBits inp
     }
 }
 
-static inline const char* string_VkSharingMode(VkSharingMode input_value)
-{
-    switch ((VkSharingMode)input_value)
-    {
+static inline const char* string_VkSharingMode(VkSharingMode input_value) {
+    switch ((VkSharingMode)input_value) {
         case VK_SHARING_MODE_EXCLUSIVE:
             return "VK_SHARING_MODE_EXCLUSIVE";
         case VK_SHARING_MODE_CONCURRENT:
@@ -1531,10 +1473,8 @@ static inline const char* string_VkSharingMode(VkSharingMode input_value)
     }
 }
 
-static inline const char* string_VkImageLayout(VkImageLayout input_value)
-{
-    switch ((VkImageLayout)input_value)
-    {
+static inline const char* string_VkImageLayout(VkImageLayout input_value) {
+    switch ((VkImageLayout)input_value) {
         case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
             return "VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL";
         case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
@@ -1566,10 +1506,8 @@ static inline const char* string_VkImageLayout(VkImageLayout input_value)
     }
 }
 
-static inline const char* string_VkImageViewType(VkImageViewType input_value)
-{
-    switch ((VkImageViewType)input_value)
-    {
+static inline const char* string_VkImageViewType(VkImageViewType input_value) {
+    switch ((VkImageViewType)input_value) {
         case VK_IMAGE_VIEW_TYPE_3D:
             return "VK_IMAGE_VIEW_TYPE_3D";
         case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
@@ -1589,10 +1527,8 @@ static inline const char* string_VkImageViewType(VkImageViewType input_value)
     }
 }
 
-static inline const char* string_VkComponentSwizzle(VkComponentSwizzle input_value)
-{
-    switch ((VkComponentSwizzle)input_value)
-    {
+static inline const char* string_VkComponentSwizzle(VkComponentSwizzle input_value) {
+    switch ((VkComponentSwizzle)input_value) {
         case VK_COMPONENT_SWIZZLE_ONE:
             return "VK_COMPONENT_SWIZZLE_ONE";
         case VK_COMPONENT_SWIZZLE_ZERO:
@@ -1612,10 +1548,8 @@ static inline const char* string_VkComponentSwizzle(VkComponentSwizzle input_val
     }
 }
 
-static inline const char* string_VkPipelineCreateFlagBits(VkPipelineCreateFlagBits input_value)
-{
-    switch ((VkPipelineCreateFlagBits)input_value)
-    {
+static inline const char* string_VkPipelineCreateFlagBits(VkPipelineCreateFlagBits input_value) {
+    switch ((VkPipelineCreateFlagBits)input_value) {
         case VK_PIPELINE_CREATE_DISPATCH_BASE:
             return "VK_PIPELINE_CREATE_DISPATCH_BASE";
         case VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT:
@@ -1631,10 +1565,8 @@ static inline const char* string_VkPipelineCreateFlagBits(VkPipelineCreateFlagBi
     }
 }
 
-static inline const char* string_VkShaderStageFlagBits(VkShaderStageFlagBits input_value)
-{
-    switch ((VkShaderStageFlagBits)input_value)
-    {
+static inline const char* string_VkShaderStageFlagBits(VkShaderStageFlagBits input_value) {
+    switch ((VkShaderStageFlagBits)input_value) {
         case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
             return "VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT";
         case VK_SHADER_STAGE_VERTEX_BIT:
@@ -1656,10 +1588,8 @@ static inline const char* string_VkShaderStageFlagBits(VkShaderStageFlagBits inp
     }
 }
 
-static inline const char* string_VkVertexInputRate(VkVertexInputRate input_value)
-{
-    switch ((VkVertexInputRate)input_value)
-    {
+static inline const char* string_VkVertexInputRate(VkVertexInputRate input_value) {
+    switch ((VkVertexInputRate)input_value) {
         case VK_VERTEX_INPUT_RATE_VERTEX:
             return "VK_VERTEX_INPUT_RATE_VERTEX";
         case VK_VERTEX_INPUT_RATE_INSTANCE:
@@ -1669,10 +1599,8 @@ static inline const char* string_VkVertexInputRate(VkVertexInputRate input_value
     }
 }
 
-static inline const char* string_VkPrimitiveTopology(VkPrimitiveTopology input_value)
-{
-    switch ((VkPrimitiveTopology)input_value)
-    {
+static inline const char* string_VkPrimitiveTopology(VkPrimitiveTopology input_value) {
+    switch ((VkPrimitiveTopology)input_value) {
         case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
             return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST";
         case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
@@ -1700,10 +1628,8 @@ static inline const char* string_VkPrimitiveTopology(VkPrimitiveTopology input_v
     }
 }
 
-static inline const char* string_VkPolygonMode(VkPolygonMode input_value)
-{
-    switch ((VkPolygonMode)input_value)
-    {
+static inline const char* string_VkPolygonMode(VkPolygonMode input_value) {
+    switch ((VkPolygonMode)input_value) {
         case VK_POLYGON_MODE_FILL:
             return "VK_POLYGON_MODE_FILL";
         case VK_POLYGON_MODE_LINE:
@@ -1717,10 +1643,8 @@ static inline const char* string_VkPolygonMode(VkPolygonMode input_value)
     }
 }
 
-static inline const char* string_VkCullModeFlagBits(VkCullModeFlagBits input_value)
-{
-    switch ((VkCullModeFlagBits)input_value)
-    {
+static inline const char* string_VkCullModeFlagBits(VkCullModeFlagBits input_value) {
+    switch ((VkCullModeFlagBits)input_value) {
         case VK_CULL_MODE_BACK_BIT:
             return "VK_CULL_MODE_BACK_BIT";
         case VK_CULL_MODE_NONE:
@@ -1734,10 +1658,8 @@ static inline const char* string_VkCullModeFlagBits(VkCullModeFlagBits input_val
     }
 }
 
-static inline const char* string_VkFrontFace(VkFrontFace input_value)
-{
-    switch ((VkFrontFace)input_value)
-    {
+static inline const char* string_VkFrontFace(VkFrontFace input_value) {
+    switch ((VkFrontFace)input_value) {
         case VK_FRONT_FACE_CLOCKWISE:
             return "VK_FRONT_FACE_CLOCKWISE";
         case VK_FRONT_FACE_COUNTER_CLOCKWISE:
@@ -1747,10 +1669,8 @@ static inline const char* string_VkFrontFace(VkFrontFace input_value)
     }
 }
 
-static inline const char* string_VkCompareOp(VkCompareOp input_value)
-{
-    switch ((VkCompareOp)input_value)
-    {
+static inline const char* string_VkCompareOp(VkCompareOp input_value) {
+    switch ((VkCompareOp)input_value) {
         case VK_COMPARE_OP_LESS_OR_EQUAL:
             return "VK_COMPARE_OP_LESS_OR_EQUAL";
         case VK_COMPARE_OP_NOT_EQUAL:
@@ -1772,10 +1692,8 @@ static inline const char* string_VkCompareOp(VkCompareOp input_value)
     }
 }
 
-static inline const char* string_VkStencilOp(VkStencilOp input_value)
-{
-    switch ((VkStencilOp)input_value)
-    {
+static inline const char* string_VkStencilOp(VkStencilOp input_value) {
+    switch ((VkStencilOp)input_value) {
         case VK_STENCIL_OP_ZERO:
             return "VK_STENCIL_OP_ZERO";
         case VK_STENCIL_OP_DECREMENT_AND_WRAP:
@@ -1797,10 +1715,8 @@ static inline const char* string_VkStencilOp(VkStencilOp input_value)
     }
 }
 
-static inline const char* string_VkLogicOp(VkLogicOp input_value)
-{
-    switch ((VkLogicOp)input_value)
-    {
+static inline const char* string_VkLogicOp(VkLogicOp input_value) {
+    switch ((VkLogicOp)input_value) {
         case VK_LOGIC_OP_EQUIVALENT:
             return "VK_LOGIC_OP_EQUIVALENT";
         case VK_LOGIC_OP_INVERT:
@@ -1838,10 +1754,8 @@ static inline const char* string_VkLogicOp(VkLogicOp input_value)
     }
 }
 
-static inline const char* string_VkBlendFactor(VkBlendFactor input_value)
-{
-    switch ((VkBlendFactor)input_value)
-    {
+static inline const char* string_VkBlendFactor(VkBlendFactor input_value) {
+    switch ((VkBlendFactor)input_value) {
         case VK_BLEND_FACTOR_DST_ALPHA:
             return "VK_BLEND_FACTOR_DST_ALPHA";
         case VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR:
@@ -1885,10 +1799,8 @@ static inline const char* string_VkBlendFactor(VkBlendFactor input_value)
     }
 }
 
-static inline const char* string_VkBlendOp(VkBlendOp input_value)
-{
-    switch ((VkBlendOp)input_value)
-    {
+static inline const char* string_VkBlendOp(VkBlendOp input_value) {
+    switch ((VkBlendOp)input_value) {
         case VK_BLEND_OP_HSL_SATURATION_EXT:
             return "VK_BLEND_OP_HSL_SATURATION_EXT";
         case VK_BLEND_OP_PLUS_EXT:
@@ -1996,10 +1908,8 @@ static inline const char* string_VkBlendOp(VkBlendOp input_value)
     }
 }
 
-static inline const char* string_VkColorComponentFlagBits(VkColorComponentFlagBits input_value)
-{
-    switch ((VkColorComponentFlagBits)input_value)
-    {
+static inline const char* string_VkColorComponentFlagBits(VkColorComponentFlagBits input_value) {
+    switch ((VkColorComponentFlagBits)input_value) {
         case VK_COLOR_COMPONENT_R_BIT:
             return "VK_COLOR_COMPONENT_R_BIT";
         case VK_COLOR_COMPONENT_G_BIT:
@@ -2013,10 +1923,8 @@ static inline const char* string_VkColorComponentFlagBits(VkColorComponentFlagBi
     }
 }
 
-static inline const char* string_VkDynamicState(VkDynamicState input_value)
-{
-    switch ((VkDynamicState)input_value)
-    {
+static inline const char* string_VkDynamicState(VkDynamicState input_value) {
+    switch ((VkDynamicState)input_value) {
         case VK_DYNAMIC_STATE_VIEWPORT:
             return "VK_DYNAMIC_STATE_VIEWPORT";
         case VK_DYNAMIC_STATE_STENCIL_REFERENCE:
@@ -2046,10 +1954,8 @@ static inline const char* string_VkDynamicState(VkDynamicState input_value)
     }
 }
 
-static inline const char* string_VkFilter(VkFilter input_value)
-{
-    switch ((VkFilter)input_value)
-    {
+static inline const char* string_VkFilter(VkFilter input_value) {
+    switch ((VkFilter)input_value) {
         case VK_FILTER_NEAREST:
             return "VK_FILTER_NEAREST";
         case VK_FILTER_CUBIC_IMG:
@@ -2061,10 +1967,8 @@ static inline const char* string_VkFilter(VkFilter input_value)
     }
 }
 
-static inline const char* string_VkSamplerMipmapMode(VkSamplerMipmapMode input_value)
-{
-    switch ((VkSamplerMipmapMode)input_value)
-    {
+static inline const char* string_VkSamplerMipmapMode(VkSamplerMipmapMode input_value) {
+    switch ((VkSamplerMipmapMode)input_value) {
         case VK_SAMPLER_MIPMAP_MODE_LINEAR:
             return "VK_SAMPLER_MIPMAP_MODE_LINEAR";
         case VK_SAMPLER_MIPMAP_MODE_NEAREST:
@@ -2074,10 +1978,8 @@ static inline const char* string_VkSamplerMipmapMode(VkSamplerMipmapMode input_v
     }
 }
 
-static inline const char* string_VkSamplerAddressMode(VkSamplerAddressMode input_value)
-{
-    switch ((VkSamplerAddressMode)input_value)
-    {
+static inline const char* string_VkSamplerAddressMode(VkSamplerAddressMode input_value) {
+    switch ((VkSamplerAddressMode)input_value) {
         case VK_SAMPLER_ADDRESS_MODE_REPEAT:
             return "VK_SAMPLER_ADDRESS_MODE_REPEAT";
         case VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:
@@ -2093,10 +1995,8 @@ static inline const char* string_VkSamplerAddressMode(VkSamplerAddressMode input
     }
 }
 
-static inline const char* string_VkBorderColor(VkBorderColor input_value)
-{
-    switch ((VkBorderColor)input_value)
-    {
+static inline const char* string_VkBorderColor(VkBorderColor input_value) {
+    switch ((VkBorderColor)input_value) {
         case VK_BORDER_COLOR_INT_OPAQUE_BLACK:
             return "VK_BORDER_COLOR_INT_OPAQUE_BLACK";
         case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
@@ -2114,10 +2014,8 @@ static inline const char* string_VkBorderColor(VkBorderColor input_value)
     }
 }
 
-static inline const char* string_VkDescriptorSetLayoutCreateFlagBits(VkDescriptorSetLayoutCreateFlagBits input_value)
-{
-    switch ((VkDescriptorSetLayoutCreateFlagBits)input_value)
-    {
+static inline const char* string_VkDescriptorSetLayoutCreateFlagBits(VkDescriptorSetLayoutCreateFlagBits input_value) {
+    switch ((VkDescriptorSetLayoutCreateFlagBits)input_value) {
         case VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR:
             return "VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR";
         default:
@@ -2125,10 +2023,8 @@ static inline const char* string_VkDescriptorSetLayoutCreateFlagBits(VkDescripto
     }
 }
 
-static inline const char* string_VkDescriptorType(VkDescriptorType input_value)
-{
-    switch ((VkDescriptorType)input_value)
-    {
+static inline const char* string_VkDescriptorType(VkDescriptorType input_value) {
+    switch ((VkDescriptorType)input_value) {
         case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
             return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
@@ -2156,10 +2052,8 @@ static inline const char* string_VkDescriptorType(VkDescriptorType input_value)
     }
 }
 
-static inline const char* string_VkDescriptorPoolCreateFlagBits(VkDescriptorPoolCreateFlagBits input_value)
-{
-    switch ((VkDescriptorPoolCreateFlagBits)input_value)
-    {
+static inline const char* string_VkDescriptorPoolCreateFlagBits(VkDescriptorPoolCreateFlagBits input_value) {
+    switch ((VkDescriptorPoolCreateFlagBits)input_value) {
         case VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT:
             return "VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT";
         default:
@@ -2167,10 +2061,8 @@ static inline const char* string_VkDescriptorPoolCreateFlagBits(VkDescriptorPool
     }
 }
 
-static inline const char* string_VkAttachmentDescriptionFlagBits(VkAttachmentDescriptionFlagBits input_value)
-{
-    switch ((VkAttachmentDescriptionFlagBits)input_value)
-    {
+static inline const char* string_VkAttachmentDescriptionFlagBits(VkAttachmentDescriptionFlagBits input_value) {
+    switch ((VkAttachmentDescriptionFlagBits)input_value) {
         case VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT:
             return "VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT";
         default:
@@ -2178,10 +2070,8 @@ static inline const char* string_VkAttachmentDescriptionFlagBits(VkAttachmentDes
     }
 }
 
-static inline const char* string_VkAttachmentLoadOp(VkAttachmentLoadOp input_value)
-{
-    switch ((VkAttachmentLoadOp)input_value)
-    {
+static inline const char* string_VkAttachmentLoadOp(VkAttachmentLoadOp input_value) {
+    switch ((VkAttachmentLoadOp)input_value) {
         case VK_ATTACHMENT_LOAD_OP_DONT_CARE:
             return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
         case VK_ATTACHMENT_LOAD_OP_LOAD:
@@ -2193,10 +2083,8 @@ static inline const char* string_VkAttachmentLoadOp(VkAttachmentLoadOp input_val
     }
 }
 
-static inline const char* string_VkAttachmentStoreOp(VkAttachmentStoreOp input_value)
-{
-    switch ((VkAttachmentStoreOp)input_value)
-    {
+static inline const char* string_VkAttachmentStoreOp(VkAttachmentStoreOp input_value) {
+    switch ((VkAttachmentStoreOp)input_value) {
         case VK_ATTACHMENT_STORE_OP_STORE:
             return "VK_ATTACHMENT_STORE_OP_STORE";
         case VK_ATTACHMENT_STORE_OP_DONT_CARE:
@@ -2206,10 +2094,8 @@ static inline const char* string_VkAttachmentStoreOp(VkAttachmentStoreOp input_v
     }
 }
 
-static inline const char* string_VkSubpassDescriptionFlagBits(VkSubpassDescriptionFlagBits input_value)
-{
-    switch ((VkSubpassDescriptionFlagBits)input_value)
-    {
+static inline const char* string_VkSubpassDescriptionFlagBits(VkSubpassDescriptionFlagBits input_value) {
+    switch ((VkSubpassDescriptionFlagBits)input_value) {
         case VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX:
             return "VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX";
         case VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX:
@@ -2219,10 +2105,8 @@ static inline const char* string_VkSubpassDescriptionFlagBits(VkSubpassDescripti
     }
 }
 
-static inline const char* string_VkPipelineBindPoint(VkPipelineBindPoint input_value)
-{
-    switch ((VkPipelineBindPoint)input_value)
-    {
+static inline const char* string_VkPipelineBindPoint(VkPipelineBindPoint input_value) {
+    switch ((VkPipelineBindPoint)input_value) {
         case VK_PIPELINE_BIND_POINT_COMPUTE:
             return "VK_PIPELINE_BIND_POINT_COMPUTE";
         case VK_PIPELINE_BIND_POINT_GRAPHICS:
@@ -2232,10 +2116,8 @@ static inline const char* string_VkPipelineBindPoint(VkPipelineBindPoint input_v
     }
 }
 
-static inline const char* string_VkAccessFlagBits(VkAccessFlagBits input_value)
-{
-    switch ((VkAccessFlagBits)input_value)
-    {
+static inline const char* string_VkAccessFlagBits(VkAccessFlagBits input_value) {
+    switch ((VkAccessFlagBits)input_value) {
         case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
             return "VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT";
         case VK_ACCESS_MEMORY_WRITE_BIT:
@@ -2281,10 +2163,8 @@ static inline const char* string_VkAccessFlagBits(VkAccessFlagBits input_value)
     }
 }
 
-static inline const char* string_VkDependencyFlagBits(VkDependencyFlagBits input_value)
-{
-    switch ((VkDependencyFlagBits)input_value)
-    {
+static inline const char* string_VkDependencyFlagBits(VkDependencyFlagBits input_value) {
+    switch ((VkDependencyFlagBits)input_value) {
         case VK_DEPENDENCY_VIEW_LOCAL_BIT:
             return "VK_DEPENDENCY_VIEW_LOCAL_BIT";
         case VK_DEPENDENCY_DEVICE_GROUP_BIT:
@@ -2296,10 +2176,8 @@ static inline const char* string_VkDependencyFlagBits(VkDependencyFlagBits input
     }
 }
 
-static inline const char* string_VkCommandPoolCreateFlagBits(VkCommandPoolCreateFlagBits input_value)
-{
-    switch ((VkCommandPoolCreateFlagBits)input_value)
-    {
+static inline const char* string_VkCommandPoolCreateFlagBits(VkCommandPoolCreateFlagBits input_value) {
+    switch ((VkCommandPoolCreateFlagBits)input_value) {
         case VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT:
             return "VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT";
         case VK_COMMAND_POOL_CREATE_PROTECTED_BIT:
@@ -2311,10 +2189,8 @@ static inline const char* string_VkCommandPoolCreateFlagBits(VkCommandPoolCreate
     }
 }
 
-static inline const char* string_VkCommandPoolResetFlagBits(VkCommandPoolResetFlagBits input_value)
-{
-    switch ((VkCommandPoolResetFlagBits)input_value)
-    {
+static inline const char* string_VkCommandPoolResetFlagBits(VkCommandPoolResetFlagBits input_value) {
+    switch ((VkCommandPoolResetFlagBits)input_value) {
         case VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT:
             return "VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT";
         default:
@@ -2322,10 +2198,8 @@ static inline const char* string_VkCommandPoolResetFlagBits(VkCommandPoolResetFl
     }
 }
 
-static inline const char* string_VkCommandBufferLevel(VkCommandBufferLevel input_value)
-{
-    switch ((VkCommandBufferLevel)input_value)
-    {
+static inline const char* string_VkCommandBufferLevel(VkCommandBufferLevel input_value) {
+    switch ((VkCommandBufferLevel)input_value) {
         case VK_COMMAND_BUFFER_LEVEL_PRIMARY:
             return "VK_COMMAND_BUFFER_LEVEL_PRIMARY";
         case VK_COMMAND_BUFFER_LEVEL_SECONDARY:
@@ -2335,10 +2209,8 @@ static inline const char* string_VkCommandBufferLevel(VkCommandBufferLevel input
     }
 }
 
-static inline const char* string_VkCommandBufferUsageFlagBits(VkCommandBufferUsageFlagBits input_value)
-{
-    switch ((VkCommandBufferUsageFlagBits)input_value)
-    {
+static inline const char* string_VkCommandBufferUsageFlagBits(VkCommandBufferUsageFlagBits input_value) {
+    switch ((VkCommandBufferUsageFlagBits)input_value) {
         case VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT:
             return "VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT";
         case VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT:
@@ -2350,10 +2222,8 @@ static inline const char* string_VkCommandBufferUsageFlagBits(VkCommandBufferUsa
     }
 }
 
-static inline const char* string_VkQueryControlFlagBits(VkQueryControlFlagBits input_value)
-{
-    switch ((VkQueryControlFlagBits)input_value)
-    {
+static inline const char* string_VkQueryControlFlagBits(VkQueryControlFlagBits input_value) {
+    switch ((VkQueryControlFlagBits)input_value) {
         case VK_QUERY_CONTROL_PRECISE_BIT:
             return "VK_QUERY_CONTROL_PRECISE_BIT";
         default:
@@ -2361,10 +2231,8 @@ static inline const char* string_VkQueryControlFlagBits(VkQueryControlFlagBits i
     }
 }
 
-static inline const char* string_VkCommandBufferResetFlagBits(VkCommandBufferResetFlagBits input_value)
-{
-    switch ((VkCommandBufferResetFlagBits)input_value)
-    {
+static inline const char* string_VkCommandBufferResetFlagBits(VkCommandBufferResetFlagBits input_value) {
+    switch ((VkCommandBufferResetFlagBits)input_value) {
         case VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT:
             return "VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT";
         default:
@@ -2372,10 +2240,8 @@ static inline const char* string_VkCommandBufferResetFlagBits(VkCommandBufferRes
     }
 }
 
-static inline const char* string_VkStencilFaceFlagBits(VkStencilFaceFlagBits input_value)
-{
-    switch ((VkStencilFaceFlagBits)input_value)
-    {
+static inline const char* string_VkStencilFaceFlagBits(VkStencilFaceFlagBits input_value) {
+    switch ((VkStencilFaceFlagBits)input_value) {
         case VK_STENCIL_FACE_BACK_BIT:
             return "VK_STENCIL_FACE_BACK_BIT";
         case VK_STENCIL_FRONT_AND_BACK:
@@ -2387,10 +2253,8 @@ static inline const char* string_VkStencilFaceFlagBits(VkStencilFaceFlagBits inp
     }
 }
 
-static inline const char* string_VkIndexType(VkIndexType input_value)
-{
-    switch ((VkIndexType)input_value)
-    {
+static inline const char* string_VkIndexType(VkIndexType input_value) {
+    switch ((VkIndexType)input_value) {
         case VK_INDEX_TYPE_UINT16:
             return "VK_INDEX_TYPE_UINT16";
         case VK_INDEX_TYPE_UINT32:
@@ -2400,10 +2264,8 @@ static inline const char* string_VkIndexType(VkIndexType input_value)
     }
 }
 
-static inline const char* string_VkSubpassContents(VkSubpassContents input_value)
-{
-    switch ((VkSubpassContents)input_value)
-    {
+static inline const char* string_VkSubpassContents(VkSubpassContents input_value) {
+    switch ((VkSubpassContents)input_value) {
         case VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:
             return "VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS";
         case VK_SUBPASS_CONTENTS_INLINE:
@@ -2413,10 +2275,8 @@ static inline const char* string_VkSubpassContents(VkSubpassContents input_value
     }
 }
 
-static inline const char* string_VkObjectType(VkObjectType input_value)
-{
-    switch ((VkObjectType)input_value)
-    {
+static inline const char* string_VkObjectType(VkObjectType input_value) {
+    switch ((VkObjectType)input_value) {
         case VK_OBJECT_TYPE_QUERY_POOL:
             return "VK_OBJECT_TYPE_QUERY_POOL";
         case VK_OBJECT_TYPE_BUFFER:
@@ -2496,10 +2356,8 @@ static inline const char* string_VkObjectType(VkObjectType input_value)
     }
 }
 
-static inline const char* string_VkSubgroupFeatureFlagBits(VkSubgroupFeatureFlagBits input_value)
-{
-    switch ((VkSubgroupFeatureFlagBits)input_value)
-    {
+static inline const char* string_VkSubgroupFeatureFlagBits(VkSubgroupFeatureFlagBits input_value) {
+    switch ((VkSubgroupFeatureFlagBits)input_value) {
         case VK_SUBGROUP_FEATURE_BALLOT_BIT:
             return "VK_SUBGROUP_FEATURE_BALLOT_BIT";
         case VK_SUBGROUP_FEATURE_ARITHMETIC_BIT:
@@ -2521,10 +2379,8 @@ static inline const char* string_VkSubgroupFeatureFlagBits(VkSubgroupFeatureFlag
     }
 }
 
-static inline const char* string_VkPeerMemoryFeatureFlagBits(VkPeerMemoryFeatureFlagBits input_value)
-{
-    switch ((VkPeerMemoryFeatureFlagBits)input_value)
-    {
+static inline const char* string_VkPeerMemoryFeatureFlagBits(VkPeerMemoryFeatureFlagBits input_value) {
+    switch ((VkPeerMemoryFeatureFlagBits)input_value) {
         case VK_PEER_MEMORY_FEATURE_COPY_DST_BIT:
             return "VK_PEER_MEMORY_FEATURE_COPY_DST_BIT";
         case VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT:
@@ -2538,10 +2394,8 @@ static inline const char* string_VkPeerMemoryFeatureFlagBits(VkPeerMemoryFeature
     }
 }
 
-static inline const char* string_VkMemoryAllocateFlagBits(VkMemoryAllocateFlagBits input_value)
-{
-    switch ((VkMemoryAllocateFlagBits)input_value)
-    {
+static inline const char* string_VkMemoryAllocateFlagBits(VkMemoryAllocateFlagBits input_value) {
+    switch ((VkMemoryAllocateFlagBits)input_value) {
         case VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT:
             return "VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT";
         default:
@@ -2549,10 +2403,8 @@ static inline const char* string_VkMemoryAllocateFlagBits(VkMemoryAllocateFlagBi
     }
 }
 
-static inline const char* string_VkPointClippingBehavior(VkPointClippingBehavior input_value)
-{
-    switch ((VkPointClippingBehavior)input_value)
-    {
+static inline const char* string_VkPointClippingBehavior(VkPointClippingBehavior input_value) {
+    switch ((VkPointClippingBehavior)input_value) {
         case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY:
             return "VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY";
         case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES:
@@ -2562,10 +2414,8 @@ static inline const char* string_VkPointClippingBehavior(VkPointClippingBehavior
     }
 }
 
-static inline const char* string_VkTessellationDomainOrigin(VkTessellationDomainOrigin input_value)
-{
-    switch ((VkTessellationDomainOrigin)input_value)
-    {
+static inline const char* string_VkTessellationDomainOrigin(VkTessellationDomainOrigin input_value) {
+    switch ((VkTessellationDomainOrigin)input_value) {
         case VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT:
             return "VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT";
         case VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT:
@@ -2575,10 +2425,8 @@ static inline const char* string_VkTessellationDomainOrigin(VkTessellationDomain
     }
 }
 
-static inline const char* string_VkSamplerYcbcrModelConversion(VkSamplerYcbcrModelConversion input_value)
-{
-    switch ((VkSamplerYcbcrModelConversion)input_value)
-    {
+static inline const char* string_VkSamplerYcbcrModelConversion(VkSamplerYcbcrModelConversion input_value) {
+    switch ((VkSamplerYcbcrModelConversion)input_value) {
         case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:
             return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709";
         case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:
@@ -2594,10 +2442,8 @@ static inline const char* string_VkSamplerYcbcrModelConversion(VkSamplerYcbcrMod
     }
 }
 
-static inline const char* string_VkSamplerYcbcrRange(VkSamplerYcbcrRange input_value)
-{
-    switch ((VkSamplerYcbcrRange)input_value)
-    {
+static inline const char* string_VkSamplerYcbcrRange(VkSamplerYcbcrRange input_value) {
+    switch ((VkSamplerYcbcrRange)input_value) {
         case VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:
             return "VK_SAMPLER_YCBCR_RANGE_ITU_NARROW";
         case VK_SAMPLER_YCBCR_RANGE_ITU_FULL:
@@ -2607,10 +2453,8 @@ static inline const char* string_VkSamplerYcbcrRange(VkSamplerYcbcrRange input_v
     }
 }
 
-static inline const char* string_VkChromaLocation(VkChromaLocation input_value)
-{
-    switch ((VkChromaLocation)input_value)
-    {
+static inline const char* string_VkChromaLocation(VkChromaLocation input_value) {
+    switch ((VkChromaLocation)input_value) {
         case VK_CHROMA_LOCATION_COSITED_EVEN:
             return "VK_CHROMA_LOCATION_COSITED_EVEN";
         case VK_CHROMA_LOCATION_MIDPOINT:
@@ -2620,10 +2464,8 @@ static inline const char* string_VkChromaLocation(VkChromaLocation input_value)
     }
 }
 
-static inline const char* string_VkDescriptorUpdateTemplateType(VkDescriptorUpdateTemplateType input_value)
-{
-    switch ((VkDescriptorUpdateTemplateType)input_value)
-    {
+static inline const char* string_VkDescriptorUpdateTemplateType(VkDescriptorUpdateTemplateType input_value) {
+    switch ((VkDescriptorUpdateTemplateType)input_value) {
         case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET:
             return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET";
         case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR:
@@ -2633,10 +2475,8 @@ static inline const char* string_VkDescriptorUpdateTemplateType(VkDescriptorUpda
     }
 }
 
-static inline const char* string_VkExternalMemoryHandleTypeFlagBits(VkExternalMemoryHandleTypeFlagBits input_value)
-{
-    switch ((VkExternalMemoryHandleTypeFlagBits)input_value)
-    {
+static inline const char* string_VkExternalMemoryHandleTypeFlagBits(VkExternalMemoryHandleTypeFlagBits input_value) {
+    switch ((VkExternalMemoryHandleTypeFlagBits)input_value) {
         case VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT:
             return "VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT";
         case VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT:
@@ -2662,10 +2502,8 @@ static inline const char* string_VkExternalMemoryHandleTypeFlagBits(VkExternalMe
     }
 }
 
-static inline const char* string_VkExternalMemoryFeatureFlagBits(VkExternalMemoryFeatureFlagBits input_value)
-{
-    switch ((VkExternalMemoryFeatureFlagBits)input_value)
-    {
+static inline const char* string_VkExternalMemoryFeatureFlagBits(VkExternalMemoryFeatureFlagBits input_value) {
+    switch ((VkExternalMemoryFeatureFlagBits)input_value) {
         case VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT:
             return "VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT";
         case VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT:
@@ -2677,10 +2515,8 @@ static inline const char* string_VkExternalMemoryFeatureFlagBits(VkExternalMemor
     }
 }
 
-static inline const char* string_VkExternalFenceHandleTypeFlagBits(VkExternalFenceHandleTypeFlagBits input_value)
-{
-    switch ((VkExternalFenceHandleTypeFlagBits)input_value)
-    {
+static inline const char* string_VkExternalFenceHandleTypeFlagBits(VkExternalFenceHandleTypeFlagBits input_value) {
+    switch ((VkExternalFenceHandleTypeFlagBits)input_value) {
         case VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
             return "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT";
         case VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
@@ -2694,10 +2530,8 @@ static inline const char* string_VkExternalFenceHandleTypeFlagBits(VkExternalFen
     }
 }
 
-static inline const char* string_VkExternalFenceFeatureFlagBits(VkExternalFenceFeatureFlagBits input_value)
-{
-    switch ((VkExternalFenceFeatureFlagBits)input_value)
-    {
+static inline const char* string_VkExternalFenceFeatureFlagBits(VkExternalFenceFeatureFlagBits input_value) {
+    switch ((VkExternalFenceFeatureFlagBits)input_value) {
         case VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT:
             return "VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT";
         case VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT:
@@ -2707,10 +2541,8 @@ static inline const char* string_VkExternalFenceFeatureFlagBits(VkExternalFenceF
     }
 }
 
-static inline const char* string_VkFenceImportFlagBits(VkFenceImportFlagBits input_value)
-{
-    switch ((VkFenceImportFlagBits)input_value)
-    {
+static inline const char* string_VkFenceImportFlagBits(VkFenceImportFlagBits input_value) {
+    switch ((VkFenceImportFlagBits)input_value) {
         case VK_FENCE_IMPORT_TEMPORARY_BIT:
             return "VK_FENCE_IMPORT_TEMPORARY_BIT";
         default:
@@ -2718,10 +2550,8 @@ static inline const char* string_VkFenceImportFlagBits(VkFenceImportFlagBits inp
     }
 }
 
-static inline const char* string_VkSemaphoreImportFlagBits(VkSemaphoreImportFlagBits input_value)
-{
-    switch ((VkSemaphoreImportFlagBits)input_value)
-    {
+static inline const char* string_VkSemaphoreImportFlagBits(VkSemaphoreImportFlagBits input_value) {
+    switch ((VkSemaphoreImportFlagBits)input_value) {
         case VK_SEMAPHORE_IMPORT_TEMPORARY_BIT:
             return "VK_SEMAPHORE_IMPORT_TEMPORARY_BIT";
         default:
@@ -2729,10 +2559,8 @@ static inline const char* string_VkSemaphoreImportFlagBits(VkSemaphoreImportFlag
     }
 }
 
-static inline const char* string_VkExternalSemaphoreHandleTypeFlagBits(VkExternalSemaphoreHandleTypeFlagBits input_value)
-{
-    switch ((VkExternalSemaphoreHandleTypeFlagBits)input_value)
-    {
+static inline const char* string_VkExternalSemaphoreHandleTypeFlagBits(VkExternalSemaphoreHandleTypeFlagBits input_value) {
+    switch ((VkExternalSemaphoreHandleTypeFlagBits)input_value) {
         case VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
             return "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT";
         case VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
@@ -2748,10 +2576,8 @@ static inline const char* string_VkExternalSemaphoreHandleTypeFlagBits(VkExterna
     }
 }
 
-static inline const char* string_VkExternalSemaphoreFeatureFlagBits(VkExternalSemaphoreFeatureFlagBits input_value)
-{
-    switch ((VkExternalSemaphoreFeatureFlagBits)input_value)
-    {
+static inline const char* string_VkExternalSemaphoreFeatureFlagBits(VkExternalSemaphoreFeatureFlagBits input_value) {
+    switch ((VkExternalSemaphoreFeatureFlagBits)input_value) {
         case VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT:
             return "VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT";
         case VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT:
@@ -2761,10 +2587,8 @@ static inline const char* string_VkExternalSemaphoreFeatureFlagBits(VkExternalSe
     }
 }
 
-static inline const char* string_VkSurfaceTransformFlagBitsKHR(VkSurfaceTransformFlagBitsKHR input_value)
-{
-    switch ((VkSurfaceTransformFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkSurfaceTransformFlagBitsKHR(VkSurfaceTransformFlagBitsKHR input_value) {
+    switch ((VkSurfaceTransformFlagBitsKHR)input_value) {
         case VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR:
             return "VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR";
         case VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR:
@@ -2788,10 +2612,8 @@ static inline const char* string_VkSurfaceTransformFlagBitsKHR(VkSurfaceTransfor
     }
 }
 
-static inline const char* string_VkCompositeAlphaFlagBitsKHR(VkCompositeAlphaFlagBitsKHR input_value)
-{
-    switch ((VkCompositeAlphaFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkCompositeAlphaFlagBitsKHR(VkCompositeAlphaFlagBitsKHR input_value) {
+    switch ((VkCompositeAlphaFlagBitsKHR)input_value) {
         case VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR:
             return "VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR";
         case VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR:
@@ -2805,10 +2627,8 @@ static inline const char* string_VkCompositeAlphaFlagBitsKHR(VkCompositeAlphaFla
     }
 }
 
-static inline const char* string_VkColorSpaceKHR(VkColorSpaceKHR input_value)
-{
-    switch ((VkColorSpaceKHR)input_value)
-    {
+static inline const char* string_VkColorSpaceKHR(VkColorSpaceKHR input_value) {
+    switch ((VkColorSpaceKHR)input_value) {
         case VK_COLOR_SPACE_HDR10_HLG_EXT:
             return "VK_COLOR_SPACE_HDR10_HLG_EXT";
         case VK_COLOR_SPACE_SRGB_NONLINEAR_KHR:
@@ -2844,10 +2664,8 @@ static inline const char* string_VkColorSpaceKHR(VkColorSpaceKHR input_value)
     }
 }
 
-static inline const char* string_VkPresentModeKHR(VkPresentModeKHR input_value)
-{
-    switch ((VkPresentModeKHR)input_value)
-    {
+static inline const char* string_VkPresentModeKHR(VkPresentModeKHR input_value) {
+    switch ((VkPresentModeKHR)input_value) {
         case VK_PRESENT_MODE_IMMEDIATE_KHR:
             return "VK_PRESENT_MODE_IMMEDIATE_KHR";
         case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
@@ -2865,10 +2683,8 @@ static inline const char* string_VkPresentModeKHR(VkPresentModeKHR input_value)
     }
 }
 
-static inline const char* string_VkSwapchainCreateFlagBitsKHR(VkSwapchainCreateFlagBitsKHR input_value)
-{
-    switch ((VkSwapchainCreateFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkSwapchainCreateFlagBitsKHR(VkSwapchainCreateFlagBitsKHR input_value) {
+    switch ((VkSwapchainCreateFlagBitsKHR)input_value) {
         case VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR:
             return "VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR";
         case VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR:
@@ -2878,10 +2694,8 @@ static inline const char* string_VkSwapchainCreateFlagBitsKHR(VkSwapchainCreateF
     }
 }
 
-static inline const char* string_VkDeviceGroupPresentModeFlagBitsKHR(VkDeviceGroupPresentModeFlagBitsKHR input_value)
-{
-    switch ((VkDeviceGroupPresentModeFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkDeviceGroupPresentModeFlagBitsKHR(VkDeviceGroupPresentModeFlagBitsKHR input_value) {
+    switch ((VkDeviceGroupPresentModeFlagBitsKHR)input_value) {
         case VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR:
             return "VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR";
         case VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR:
@@ -2895,10 +2709,8 @@ static inline const char* string_VkDeviceGroupPresentModeFlagBitsKHR(VkDeviceGro
     }
 }
 
-static inline const char* string_VkDisplayPlaneAlphaFlagBitsKHR(VkDisplayPlaneAlphaFlagBitsKHR input_value)
-{
-    switch ((VkDisplayPlaneAlphaFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkDisplayPlaneAlphaFlagBitsKHR(VkDisplayPlaneAlphaFlagBitsKHR input_value) {
+    switch ((VkDisplayPlaneAlphaFlagBitsKHR)input_value) {
         case VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR:
             return "VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR";
         case VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR:
@@ -2912,10 +2724,8 @@ static inline const char* string_VkDisplayPlaneAlphaFlagBitsKHR(VkDisplayPlaneAl
     }
 }
 
-static inline const char* string_VkPeerMemoryFeatureFlagBitsKHR(VkPeerMemoryFeatureFlagBitsKHR input_value)
-{
-    switch ((VkPeerMemoryFeatureFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkPeerMemoryFeatureFlagBitsKHR(VkPeerMemoryFeatureFlagBitsKHR input_value) {
+    switch ((VkPeerMemoryFeatureFlagBitsKHR)input_value) {
         case VK_PEER_MEMORY_FEATURE_COPY_DST_BIT:
             return "VK_PEER_MEMORY_FEATURE_COPY_DST_BIT";
         case VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT:
@@ -2929,10 +2739,8 @@ static inline const char* string_VkPeerMemoryFeatureFlagBitsKHR(VkPeerMemoryFeat
     }
 }
 
-static inline const char* string_VkMemoryAllocateFlagBitsKHR(VkMemoryAllocateFlagBitsKHR input_value)
-{
-    switch ((VkMemoryAllocateFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkMemoryAllocateFlagBitsKHR(VkMemoryAllocateFlagBitsKHR input_value) {
+    switch ((VkMemoryAllocateFlagBitsKHR)input_value) {
         case VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT:
             return "VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT";
         default:
@@ -2940,10 +2748,8 @@ static inline const char* string_VkMemoryAllocateFlagBitsKHR(VkMemoryAllocateFla
     }
 }
 
-static inline const char* string_VkExternalMemoryHandleTypeFlagBitsKHR(VkExternalMemoryHandleTypeFlagBitsKHR input_value)
-{
-    switch ((VkExternalMemoryHandleTypeFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkExternalMemoryHandleTypeFlagBitsKHR(VkExternalMemoryHandleTypeFlagBitsKHR input_value) {
+    switch ((VkExternalMemoryHandleTypeFlagBitsKHR)input_value) {
         case VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT:
             return "VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT";
         case VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT:
@@ -2969,10 +2775,8 @@ static inline const char* string_VkExternalMemoryHandleTypeFlagBitsKHR(VkExterna
     }
 }
 
-static inline const char* string_VkExternalMemoryFeatureFlagBitsKHR(VkExternalMemoryFeatureFlagBitsKHR input_value)
-{
-    switch ((VkExternalMemoryFeatureFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkExternalMemoryFeatureFlagBitsKHR(VkExternalMemoryFeatureFlagBitsKHR input_value) {
+    switch ((VkExternalMemoryFeatureFlagBitsKHR)input_value) {
         case VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT:
             return "VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT";
         case VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT:
@@ -2984,10 +2788,8 @@ static inline const char* string_VkExternalMemoryFeatureFlagBitsKHR(VkExternalMe
     }
 }
 
-static inline const char* string_VkExternalSemaphoreHandleTypeFlagBitsKHR(VkExternalSemaphoreHandleTypeFlagBitsKHR input_value)
-{
-    switch ((VkExternalSemaphoreHandleTypeFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkExternalSemaphoreHandleTypeFlagBitsKHR(VkExternalSemaphoreHandleTypeFlagBitsKHR input_value) {
+    switch ((VkExternalSemaphoreHandleTypeFlagBitsKHR)input_value) {
         case VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
             return "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT";
         case VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
@@ -3003,10 +2805,8 @@ static inline const char* string_VkExternalSemaphoreHandleTypeFlagBitsKHR(VkExte
     }
 }
 
-static inline const char* string_VkExternalSemaphoreFeatureFlagBitsKHR(VkExternalSemaphoreFeatureFlagBitsKHR input_value)
-{
-    switch ((VkExternalSemaphoreFeatureFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkExternalSemaphoreFeatureFlagBitsKHR(VkExternalSemaphoreFeatureFlagBitsKHR input_value) {
+    switch ((VkExternalSemaphoreFeatureFlagBitsKHR)input_value) {
         case VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT:
             return "VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT";
         case VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT:
@@ -3016,10 +2816,8 @@ static inline const char* string_VkExternalSemaphoreFeatureFlagBitsKHR(VkExterna
     }
 }
 
-static inline const char* string_VkSemaphoreImportFlagBitsKHR(VkSemaphoreImportFlagBitsKHR input_value)
-{
-    switch ((VkSemaphoreImportFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkSemaphoreImportFlagBitsKHR(VkSemaphoreImportFlagBitsKHR input_value) {
+    switch ((VkSemaphoreImportFlagBitsKHR)input_value) {
         case VK_SEMAPHORE_IMPORT_TEMPORARY_BIT:
             return "VK_SEMAPHORE_IMPORT_TEMPORARY_BIT";
         default:
@@ -3027,10 +2825,8 @@ static inline const char* string_VkSemaphoreImportFlagBitsKHR(VkSemaphoreImportF
     }
 }
 
-static inline const char* string_VkDescriptorUpdateTemplateTypeKHR(VkDescriptorUpdateTemplateTypeKHR input_value)
-{
-    switch ((VkDescriptorUpdateTemplateTypeKHR)input_value)
-    {
+static inline const char* string_VkDescriptorUpdateTemplateTypeKHR(VkDescriptorUpdateTemplateTypeKHR input_value) {
+    switch ((VkDescriptorUpdateTemplateTypeKHR)input_value) {
         case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET:
             return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET";
         case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR:
@@ -3040,10 +2836,8 @@ static inline const char* string_VkDescriptorUpdateTemplateTypeKHR(VkDescriptorU
     }
 }
 
-static inline const char* string_VkExternalFenceHandleTypeFlagBitsKHR(VkExternalFenceHandleTypeFlagBitsKHR input_value)
-{
-    switch ((VkExternalFenceHandleTypeFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkExternalFenceHandleTypeFlagBitsKHR(VkExternalFenceHandleTypeFlagBitsKHR input_value) {
+    switch ((VkExternalFenceHandleTypeFlagBitsKHR)input_value) {
         case VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
             return "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT";
         case VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
@@ -3057,10 +2851,8 @@ static inline const char* string_VkExternalFenceHandleTypeFlagBitsKHR(VkExternal
     }
 }
 
-static inline const char* string_VkExternalFenceFeatureFlagBitsKHR(VkExternalFenceFeatureFlagBitsKHR input_value)
-{
-    switch ((VkExternalFenceFeatureFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkExternalFenceFeatureFlagBitsKHR(VkExternalFenceFeatureFlagBitsKHR input_value) {
+    switch ((VkExternalFenceFeatureFlagBitsKHR)input_value) {
         case VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT:
             return "VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT";
         case VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT:
@@ -3070,10 +2862,8 @@ static inline const char* string_VkExternalFenceFeatureFlagBitsKHR(VkExternalFen
     }
 }
 
-static inline const char* string_VkFenceImportFlagBitsKHR(VkFenceImportFlagBitsKHR input_value)
-{
-    switch ((VkFenceImportFlagBitsKHR)input_value)
-    {
+static inline const char* string_VkFenceImportFlagBitsKHR(VkFenceImportFlagBitsKHR input_value) {
+    switch ((VkFenceImportFlagBitsKHR)input_value) {
         case VK_FENCE_IMPORT_TEMPORARY_BIT:
             return "VK_FENCE_IMPORT_TEMPORARY_BIT";
         default:
@@ -3081,10 +2871,8 @@ static inline const char* string_VkFenceImportFlagBitsKHR(VkFenceImportFlagBitsK
     }
 }
 
-static inline const char* string_VkPointClippingBehaviorKHR(VkPointClippingBehaviorKHR input_value)
-{
-    switch ((VkPointClippingBehaviorKHR)input_value)
-    {
+static inline const char* string_VkPointClippingBehaviorKHR(VkPointClippingBehaviorKHR input_value) {
+    switch ((VkPointClippingBehaviorKHR)input_value) {
         case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY:
             return "VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY";
         case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES:
@@ -3094,10 +2882,8 @@ static inline const char* string_VkPointClippingBehaviorKHR(VkPointClippingBehav
     }
 }
 
-static inline const char* string_VkTessellationDomainOriginKHR(VkTessellationDomainOriginKHR input_value)
-{
-    switch ((VkTessellationDomainOriginKHR)input_value)
-    {
+static inline const char* string_VkTessellationDomainOriginKHR(VkTessellationDomainOriginKHR input_value) {
+    switch ((VkTessellationDomainOriginKHR)input_value) {
         case VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT:
             return "VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT";
         case VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT:
@@ -3107,10 +2893,8 @@ static inline const char* string_VkTessellationDomainOriginKHR(VkTessellationDom
     }
 }
 
-static inline const char* string_VkSamplerYcbcrModelConversionKHR(VkSamplerYcbcrModelConversionKHR input_value)
-{
-    switch ((VkSamplerYcbcrModelConversionKHR)input_value)
-    {
+static inline const char* string_VkSamplerYcbcrModelConversionKHR(VkSamplerYcbcrModelConversionKHR input_value) {
+    switch ((VkSamplerYcbcrModelConversionKHR)input_value) {
         case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:
             return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709";
         case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:
@@ -3126,10 +2910,8 @@ static inline const char* string_VkSamplerYcbcrModelConversionKHR(VkSamplerYcbcr
     }
 }
 
-static inline const char* string_VkSamplerYcbcrRangeKHR(VkSamplerYcbcrRangeKHR input_value)
-{
-    switch ((VkSamplerYcbcrRangeKHR)input_value)
-    {
+static inline const char* string_VkSamplerYcbcrRangeKHR(VkSamplerYcbcrRangeKHR input_value) {
+    switch ((VkSamplerYcbcrRangeKHR)input_value) {
         case VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:
             return "VK_SAMPLER_YCBCR_RANGE_ITU_NARROW";
         case VK_SAMPLER_YCBCR_RANGE_ITU_FULL:
@@ -3139,10 +2921,8 @@ static inline const char* string_VkSamplerYcbcrRangeKHR(VkSamplerYcbcrRangeKHR i
     }
 }
 
-static inline const char* string_VkChromaLocationKHR(VkChromaLocationKHR input_value)
-{
-    switch ((VkChromaLocationKHR)input_value)
-    {
+static inline const char* string_VkChromaLocationKHR(VkChromaLocationKHR input_value) {
+    switch ((VkChromaLocationKHR)input_value) {
         case VK_CHROMA_LOCATION_COSITED_EVEN:
             return "VK_CHROMA_LOCATION_COSITED_EVEN";
         case VK_CHROMA_LOCATION_MIDPOINT:
@@ -3152,10 +2932,8 @@ static inline const char* string_VkChromaLocationKHR(VkChromaLocationKHR input_v
     }
 }
 
-static inline const char* string_VkDebugReportObjectTypeEXT(VkDebugReportObjectTypeEXT input_value)
-{
-    switch ((VkDebugReportObjectTypeEXT)input_value)
-    {
+static inline const char* string_VkDebugReportObjectTypeEXT(VkDebugReportObjectTypeEXT input_value) {
+    switch ((VkDebugReportObjectTypeEXT)input_value) {
         case VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT:
             return "VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT";
         case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_EXT:
@@ -3233,10 +3011,8 @@ static inline const char* string_VkDebugReportObjectTypeEXT(VkDebugReportObjectT
     }
 }
 
-static inline const char* string_VkDebugReportFlagBitsEXT(VkDebugReportFlagBitsEXT input_value)
-{
-    switch ((VkDebugReportFlagBitsEXT)input_value)
-    {
+static inline const char* string_VkDebugReportFlagBitsEXT(VkDebugReportFlagBitsEXT input_value) {
+    switch ((VkDebugReportFlagBitsEXT)input_value) {
         case VK_DEBUG_REPORT_ERROR_BIT_EXT:
             return "VK_DEBUG_REPORT_ERROR_BIT_EXT";
         case VK_DEBUG_REPORT_INFORMATION_BIT_EXT:
@@ -3252,10 +3028,8 @@ static inline const char* string_VkDebugReportFlagBitsEXT(VkDebugReportFlagBitsE
     }
 }
 
-static inline const char* string_VkRasterizationOrderAMD(VkRasterizationOrderAMD input_value)
-{
-    switch ((VkRasterizationOrderAMD)input_value)
-    {
+static inline const char* string_VkRasterizationOrderAMD(VkRasterizationOrderAMD input_value) {
+    switch ((VkRasterizationOrderAMD)input_value) {
         case VK_RASTERIZATION_ORDER_RELAXED_AMD:
             return "VK_RASTERIZATION_ORDER_RELAXED_AMD";
         case VK_RASTERIZATION_ORDER_STRICT_AMD:
@@ -3265,10 +3039,8 @@ static inline const char* string_VkRasterizationOrderAMD(VkRasterizationOrderAMD
     }
 }
 
-static inline const char* string_VkShaderInfoTypeAMD(VkShaderInfoTypeAMD input_value)
-{
-    switch ((VkShaderInfoTypeAMD)input_value)
-    {
+static inline const char* string_VkShaderInfoTypeAMD(VkShaderInfoTypeAMD input_value) {
+    switch ((VkShaderInfoTypeAMD)input_value) {
         case VK_SHADER_INFO_TYPE_BINARY_AMD:
             return "VK_SHADER_INFO_TYPE_BINARY_AMD";
         case VK_SHADER_INFO_TYPE_STATISTICS_AMD:
@@ -3280,10 +3052,8 @@ static inline const char* string_VkShaderInfoTypeAMD(VkShaderInfoTypeAMD input_v
     }
 }
 
-static inline const char* string_VkExternalMemoryHandleTypeFlagBitsNV(VkExternalMemoryHandleTypeFlagBitsNV input_value)
-{
-    switch ((VkExternalMemoryHandleTypeFlagBitsNV)input_value)
-    {
+static inline const char* string_VkExternalMemoryHandleTypeFlagBitsNV(VkExternalMemoryHandleTypeFlagBitsNV input_value) {
+    switch ((VkExternalMemoryHandleTypeFlagBitsNV)input_value) {
         case VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_NV:
             return "VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_NV";
         case VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_BIT_NV:
@@ -3297,10 +3067,8 @@ static inline const char* string_VkExternalMemoryHandleTypeFlagBitsNV(VkExternal
     }
 }
 
-static inline const char* string_VkExternalMemoryFeatureFlagBitsNV(VkExternalMemoryFeatureFlagBitsNV input_value)
-{
-    switch ((VkExternalMemoryFeatureFlagBitsNV)input_value)
-    {
+static inline const char* string_VkExternalMemoryFeatureFlagBitsNV(VkExternalMemoryFeatureFlagBitsNV input_value) {
+    switch ((VkExternalMemoryFeatureFlagBitsNV)input_value) {
         case VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV:
             return "VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV";
         case VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV:
@@ -3312,10 +3080,8 @@ static inline const char* string_VkExternalMemoryFeatureFlagBitsNV(VkExternalMem
     }
 }
 
-static inline const char* string_VkValidationCheckEXT(VkValidationCheckEXT input_value)
-{
-    switch ((VkValidationCheckEXT)input_value)
-    {
+static inline const char* string_VkValidationCheckEXT(VkValidationCheckEXT input_value) {
+    switch ((VkValidationCheckEXT)input_value) {
         case VK_VALIDATION_CHECK_ALL_EXT:
             return "VK_VALIDATION_CHECK_ALL_EXT";
         case VK_VALIDATION_CHECK_SHADERS_EXT:
@@ -3325,10 +3091,8 @@ static inline const char* string_VkValidationCheckEXT(VkValidationCheckEXT input
     }
 }
 
-static inline const char* string_VkIndirectCommandsLayoutUsageFlagBitsNVX(VkIndirectCommandsLayoutUsageFlagBitsNVX input_value)
-{
-    switch ((VkIndirectCommandsLayoutUsageFlagBitsNVX)input_value)
-    {
+static inline const char* string_VkIndirectCommandsLayoutUsageFlagBitsNVX(VkIndirectCommandsLayoutUsageFlagBitsNVX input_value) {
+    switch ((VkIndirectCommandsLayoutUsageFlagBitsNVX)input_value) {
         case VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NVX:
             return "VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NVX";
         case VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NVX:
@@ -3342,10 +3106,8 @@ static inline const char* string_VkIndirectCommandsLayoutUsageFlagBitsNVX(VkIndi
     }
 }
 
-static inline const char* string_VkObjectEntryUsageFlagBitsNVX(VkObjectEntryUsageFlagBitsNVX input_value)
-{
-    switch ((VkObjectEntryUsageFlagBitsNVX)input_value)
-    {
+static inline const char* string_VkObjectEntryUsageFlagBitsNVX(VkObjectEntryUsageFlagBitsNVX input_value) {
+    switch ((VkObjectEntryUsageFlagBitsNVX)input_value) {
         case VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX:
             return "VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX";
         case VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX:
@@ -3355,10 +3117,8 @@ static inline const char* string_VkObjectEntryUsageFlagBitsNVX(VkObjectEntryUsag
     }
 }
 
-static inline const char* string_VkIndirectCommandsTokenTypeNVX(VkIndirectCommandsTokenTypeNVX input_value)
-{
-    switch ((VkIndirectCommandsTokenTypeNVX)input_value)
-    {
+static inline const char* string_VkIndirectCommandsTokenTypeNVX(VkIndirectCommandsTokenTypeNVX input_value) {
+    switch ((VkIndirectCommandsTokenTypeNVX)input_value) {
         case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NVX:
             return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NVX";
         case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NVX:
@@ -3380,10 +3140,8 @@ static inline const char* string_VkIndirectCommandsTokenTypeNVX(VkIndirectComman
     }
 }
 
-static inline const char* string_VkObjectEntryTypeNVX(VkObjectEntryTypeNVX input_value)
-{
-    switch ((VkObjectEntryTypeNVX)input_value)
-    {
+static inline const char* string_VkObjectEntryTypeNVX(VkObjectEntryTypeNVX input_value) {
+    switch ((VkObjectEntryTypeNVX)input_value) {
         case VK_OBJECT_ENTRY_TYPE_INDEX_BUFFER_NVX:
             return "VK_OBJECT_ENTRY_TYPE_INDEX_BUFFER_NVX";
         case VK_OBJECT_ENTRY_TYPE_DESCRIPTOR_SET_NVX:
@@ -3399,10 +3157,8 @@ static inline const char* string_VkObjectEntryTypeNVX(VkObjectEntryTypeNVX input
     }
 }
 
-static inline const char* string_VkSurfaceCounterFlagBitsEXT(VkSurfaceCounterFlagBitsEXT input_value)
-{
-    switch ((VkSurfaceCounterFlagBitsEXT)input_value)
-    {
+static inline const char* string_VkSurfaceCounterFlagBitsEXT(VkSurfaceCounterFlagBitsEXT input_value) {
+    switch ((VkSurfaceCounterFlagBitsEXT)input_value) {
         case VK_SURFACE_COUNTER_VBLANK_EXT:
             return "VK_SURFACE_COUNTER_VBLANK_EXT";
         default:
@@ -3410,10 +3166,8 @@ static inline const char* string_VkSurfaceCounterFlagBitsEXT(VkSurfaceCounterFla
     }
 }
 
-static inline const char* string_VkDisplayPowerStateEXT(VkDisplayPowerStateEXT input_value)
-{
-    switch ((VkDisplayPowerStateEXT)input_value)
-    {
+static inline const char* string_VkDisplayPowerStateEXT(VkDisplayPowerStateEXT input_value) {
+    switch ((VkDisplayPowerStateEXT)input_value) {
         case VK_DISPLAY_POWER_STATE_SUSPEND_EXT:
             return "VK_DISPLAY_POWER_STATE_SUSPEND_EXT";
         case VK_DISPLAY_POWER_STATE_ON_EXT:
@@ -3425,10 +3179,8 @@ static inline const char* string_VkDisplayPowerStateEXT(VkDisplayPowerStateEXT i
     }
 }
 
-static inline const char* string_VkDeviceEventTypeEXT(VkDeviceEventTypeEXT input_value)
-{
-    switch ((VkDeviceEventTypeEXT)input_value)
-    {
+static inline const char* string_VkDeviceEventTypeEXT(VkDeviceEventTypeEXT input_value) {
+    switch ((VkDeviceEventTypeEXT)input_value) {
         case VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT:
             return "VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT";
         default:
@@ -3436,10 +3188,8 @@ static inline const char* string_VkDeviceEventTypeEXT(VkDeviceEventTypeEXT input
     }
 }
 
-static inline const char* string_VkDisplayEventTypeEXT(VkDisplayEventTypeEXT input_value)
-{
-    switch ((VkDisplayEventTypeEXT)input_value)
-    {
+static inline const char* string_VkDisplayEventTypeEXT(VkDisplayEventTypeEXT input_value) {
+    switch ((VkDisplayEventTypeEXT)input_value) {
         case VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT:
             return "VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT";
         default:
@@ -3447,10 +3197,8 @@ static inline const char* string_VkDisplayEventTypeEXT(VkDisplayEventTypeEXT inp
     }
 }
 
-static inline const char* string_VkViewportCoordinateSwizzleNV(VkViewportCoordinateSwizzleNV input_value)
-{
-    switch ((VkViewportCoordinateSwizzleNV)input_value)
-    {
+static inline const char* string_VkViewportCoordinateSwizzleNV(VkViewportCoordinateSwizzleNV input_value) {
+    switch ((VkViewportCoordinateSwizzleNV)input_value) {
         case VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_X_NV:
             return "VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_X_NV";
         case VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Y_NV:
@@ -3472,10 +3220,8 @@ static inline const char* string_VkViewportCoordinateSwizzleNV(VkViewportCoordin
     }
 }
 
-static inline const char* string_VkDiscardRectangleModeEXT(VkDiscardRectangleModeEXT input_value)
-{
-    switch ((VkDiscardRectangleModeEXT)input_value)
-    {
+static inline const char* string_VkDiscardRectangleModeEXT(VkDiscardRectangleModeEXT input_value) {
+    switch ((VkDiscardRectangleModeEXT)input_value) {
         case VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT:
             return "VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT";
         case VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT:
@@ -3485,10 +3231,8 @@ static inline const char* string_VkDiscardRectangleModeEXT(VkDiscardRectangleMod
     }
 }
 
-static inline const char* string_VkConservativeRasterizationModeEXT(VkConservativeRasterizationModeEXT input_value)
-{
-    switch ((VkConservativeRasterizationModeEXT)input_value)
-    {
+static inline const char* string_VkConservativeRasterizationModeEXT(VkConservativeRasterizationModeEXT input_value) {
+    switch ((VkConservativeRasterizationModeEXT)input_value) {
         case VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT:
             return "VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT";
         case VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT:
@@ -3500,10 +3244,8 @@ static inline const char* string_VkConservativeRasterizationModeEXT(VkConservati
     }
 }
 
-static inline const char* string_VkDebugUtilsMessageSeverityFlagBitsEXT(VkDebugUtilsMessageSeverityFlagBitsEXT input_value)
-{
-    switch ((VkDebugUtilsMessageSeverityFlagBitsEXT)input_value)
-    {
+static inline const char* string_VkDebugUtilsMessageSeverityFlagBitsEXT(VkDebugUtilsMessageSeverityFlagBitsEXT input_value) {
+    switch ((VkDebugUtilsMessageSeverityFlagBitsEXT)input_value) {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             return "VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT";
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -3517,10 +3259,8 @@ static inline const char* string_VkDebugUtilsMessageSeverityFlagBitsEXT(VkDebugU
     }
 }
 
-static inline const char* string_VkDebugUtilsMessageTypeFlagBitsEXT(VkDebugUtilsMessageTypeFlagBitsEXT input_value)
-{
-    switch ((VkDebugUtilsMessageTypeFlagBitsEXT)input_value)
-    {
+static inline const char* string_VkDebugUtilsMessageTypeFlagBitsEXT(VkDebugUtilsMessageTypeFlagBitsEXT input_value) {
+    switch ((VkDebugUtilsMessageTypeFlagBitsEXT)input_value) {
         case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
             return "VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT";
         case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
@@ -3532,10 +3272,8 @@ static inline const char* string_VkDebugUtilsMessageTypeFlagBitsEXT(VkDebugUtils
     }
 }
 
-static inline const char* string_VkSamplerReductionModeEXT(VkSamplerReductionModeEXT input_value)
-{
-    switch ((VkSamplerReductionModeEXT)input_value)
-    {
+static inline const char* string_VkSamplerReductionModeEXT(VkSamplerReductionModeEXT input_value) {
+    switch ((VkSamplerReductionModeEXT)input_value) {
         case VK_SAMPLER_REDUCTION_MODE_MAX_EXT:
             return "VK_SAMPLER_REDUCTION_MODE_MAX_EXT";
         case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT:
@@ -3547,10 +3285,8 @@ static inline const char* string_VkSamplerReductionModeEXT(VkSamplerReductionMod
     }
 }
 
-static inline const char* string_VkBlendOverlapEXT(VkBlendOverlapEXT input_value)
-{
-    switch ((VkBlendOverlapEXT)input_value)
-    {
+static inline const char* string_VkBlendOverlapEXT(VkBlendOverlapEXT input_value) {
+    switch ((VkBlendOverlapEXT)input_value) {
         case VK_BLEND_OVERLAP_UNCORRELATED_EXT:
             return "VK_BLEND_OVERLAP_UNCORRELATED_EXT";
         case VK_BLEND_OVERLAP_CONJOINT_EXT:
@@ -3562,10 +3298,8 @@ static inline const char* string_VkBlendOverlapEXT(VkBlendOverlapEXT input_value
     }
 }
 
-static inline const char* string_VkCoverageModulationModeNV(VkCoverageModulationModeNV input_value)
-{
-    switch ((VkCoverageModulationModeNV)input_value)
-    {
+static inline const char* string_VkCoverageModulationModeNV(VkCoverageModulationModeNV input_value) {
+    switch ((VkCoverageModulationModeNV)input_value) {
         case VK_COVERAGE_MODULATION_MODE_RGB_NV:
             return "VK_COVERAGE_MODULATION_MODE_RGB_NV";
         case VK_COVERAGE_MODULATION_MODE_ALPHA_NV:
@@ -3579,10 +3313,8 @@ static inline const char* string_VkCoverageModulationModeNV(VkCoverageModulation
     }
 }
 
-static inline const char* string_VkValidationCacheHeaderVersionEXT(VkValidationCacheHeaderVersionEXT input_value)
-{
-    switch ((VkValidationCacheHeaderVersionEXT)input_value)
-    {
+static inline const char* string_VkValidationCacheHeaderVersionEXT(VkValidationCacheHeaderVersionEXT input_value) {
+    switch ((VkValidationCacheHeaderVersionEXT)input_value) {
         case VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT:
             return "VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT";
         default:
@@ -3590,10 +3322,8 @@ static inline const char* string_VkValidationCacheHeaderVersionEXT(VkValidationC
     }
 }
 
-static inline const char* string_VkQueueGlobalPriorityEXT(VkQueueGlobalPriorityEXT input_value)
-{
-    switch ((VkQueueGlobalPriorityEXT)input_value)
-    {
+static inline const char* string_VkQueueGlobalPriorityEXT(VkQueueGlobalPriorityEXT input_value) {
+    switch ((VkQueueGlobalPriorityEXT)input_value) {
         case VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT:
             return "VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT";
         case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT:
@@ -3607,8 +3337,8 @@ static inline const char* string_VkQueueGlobalPriorityEXT(VkQueueGlobalPriorityE
     }
 }
 
-static inline const char * GetPhysDevFeatureString(uint32_t index) {
-    const char * IndexToPhysDevFeatureString[] = {
+static inline const char* GetPhysDevFeatureString(uint32_t index) {
+    const char* IndexToPhysDevFeatureString[] = {
         "robustBufferAccess",
         "fullDrawIndexUint32",
         "imageCubeArray",

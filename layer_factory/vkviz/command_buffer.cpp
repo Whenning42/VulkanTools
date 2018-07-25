@@ -16,6 +16,7 @@
  */
 
 #include "command_buffer.h"
+#include "device.h"
 
 std::string kMemoryTypeNames[] = {"image memory", "buffer memory"};
 std::string memoryTypeString(MEMORY_TYPE type) {

@@ -51,7 +51,7 @@ class CommandBufferTree {
 
    public:
     CommandBufferTree(): buffer_tree_(nullptr) {}
-    CommandBufferTree(QTreeWidget* tree_widget, const SyncTracker& sync): buffer_tree_(tree_widget), drawer_(sync) {
+    CommandBufferTree(QTreeWidget* tree_widget, const FrameCapture& capture) : buffer_tree_(tree_widget), drawer_(capture) {
         QObject::connect(tree_widget, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
         QObject::connect(tree_widget, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
     }

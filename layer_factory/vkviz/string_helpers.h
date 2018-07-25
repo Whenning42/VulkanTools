@@ -20,7 +20,6 @@
 
 #include "vk_enum_string_helper.h"
 
-#include <QString>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -29,14 +28,6 @@ inline std::string PointerToString(void* v) {
     std::stringstream temp;
     temp << v;
     return temp.str();
-}
-
-inline QString PointerToQString(void* v) { return QString::fromStdString(PointerToString(v)); }
-
-inline QTreeWidgetItem* NewWidget(const std::string& name) {
-    QTreeWidgetItem* widget = new QTreeWidgetItem();
-    widget->setText(0, QString::fromStdString(name));
-    return widget;
 }
 
 inline std::string to_string(VkAccessFlagBits access_flag) { return string_VkAccessFlagBits(access_flag); }
@@ -54,7 +45,5 @@ std::vector<std::string> MaskNames(MaskType bitmask) {
     }
     return set_bits;
 }
-
-
 
 #endif  // STRING_HELPERS_H

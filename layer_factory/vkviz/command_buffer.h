@@ -19,8 +19,10 @@
 #define COMMAND_BUFFER_H
 
 #include "command.h"
+#include "descriptor_set.h"
 #include "memory_barrier.h"
 #include "memory_access.h"
+#include "shader.h"
 
 #include <cassert>
 #include <vector>
@@ -117,6 +119,11 @@ framebuffer(VkVizFramebuffer::Get(pRenderPassBegin->framebuffer)){};
 };
 
 */
+
+class VkVizDevice;
+
+enum PipelineType { GRAPHICS, COMPUTE };
+
 class VkVizCommandBuffer {
     VkVizDevice* device_;
 
