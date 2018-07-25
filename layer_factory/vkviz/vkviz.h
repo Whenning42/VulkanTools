@@ -71,9 +71,12 @@ class VkViz : public layer_factory {
     // Used to track the start and end of frames.
     VkResult PostCallQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 
-
     VkResult PostCallCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) {
         device_map_.emplace(*pDevice, VkVizDevice(*pDevice));
+    }
+
+    VkResult PostCallDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) {
+        device_map_.at(device).DebugUtilsObjectNameEXT(pNameInfo);
     }
 
     // Device create calls here

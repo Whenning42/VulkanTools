@@ -159,6 +159,7 @@ class VkVizDevice {
     std::unordered_map<VkDescriptorSetLayout, VkVizDescriptorSetLayoutCreateInfo> set_layout_info_;
     std::unordered_map<VkDescriptorSet, VkVizDescriptorSet> descriptor_sets_;
     std::unordered_map<VkPipeline, std::vector<PipelineStage>> pipelines_;
+    std::unordered_map<std::uintptr_t, std::string> handle_names_;
 
     std::vector<const uint32_t*> shader_sources_;
     // std::vector<Operation> operations_;
@@ -225,6 +226,10 @@ class VkVizDevice {
 
     void UpdateDescriptorSets(uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites,
                               uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies);
+
+    VkResult DebugUtilsObjectNameEXT(const VkDebugUtilsObjectNameInfoEXT* pNameInfo) {
+        handle_names_[pNameInfo->objectHandle] = std::string(pNameInfo->pObjectName);
+    }
 
     void CreateImageView(const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) {
         images_for_views_.emplace(std::make_pair(*pView, pCreateInfo->image));

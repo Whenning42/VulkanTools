@@ -18,9 +18,12 @@
 #ifndef STRING_HELPERS_H
 #define STRING_HELPERS_H
 
+#include "vk_enum_string_helper.h"
+
 #include <QString>
 #include <sstream>
 #include <string>
+#include <vector>
 
 inline std::string PointerToString(void* v) {
     std::stringstream temp;
@@ -35,6 +38,23 @@ inline QTreeWidgetItem* NewWidget(const std::string& name) {
     widget->setText(0, QString::fromStdString(name));
     return widget;
 }
+
+inline std::string to_string(VkAccessFlagBits access_flag) { return string_VkAccessFlagBits(access_flag); }
+inline std::string to_string(VkPipelineStageFlagBits stage_flag) { return string_VkPipelineStageFlagBits(stage_flag); }
+
+template <typename MaskType, typename BitType>
+std::vector<std::string> MaskNames(MaskType bitmask) {
+    std::vector<std::string> set_bits;
+
+    for (uint32_t bit = 0; bit < 32; ++bit) {
+        uint32_t flag = 1 << bit;
+        if (flag & bitmask) {
+            set_bits.push_back(to_string(static_cast<BitType>(flag)));
+        }
+    }
+    return set_bits;
+}
+
 
 
 #endif  // STRING_HELPERS_H

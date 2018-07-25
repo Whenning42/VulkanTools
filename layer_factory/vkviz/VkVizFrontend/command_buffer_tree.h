@@ -26,11 +26,12 @@
 
 #include "color_tree_widget.h"
 #include "command_buffer.h"
+#include "command_viz.h"
 #include "synchronization.h"
 
 class CommandBufferTree {
     QTreeWidget* buffer_tree_;
-    const SyncTracker* sync_;
+    CommandDrawer drawer_;
 
     // Checks whether this view has any Command Buffers in it.
     bool IsEmpty() { return buffer_tree_->columnCount() == 0; }
@@ -50,7 +51,7 @@ class CommandBufferTree {
 
    public:
     CommandBufferTree(): buffer_tree_(nullptr) {}
-    CommandBufferTree(QTreeWidget* tree_widget, SyncTracker& sync): buffer_tree_(tree_widget), sync_(&sync) {
+    CommandBufferTree(QTreeWidget* tree_widget, const SyncTracker& sync): buffer_tree_(tree_widget), drawer_(sync) {
         QObject::connect(tree_widget, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
         QObject::connect(tree_widget, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
     }
