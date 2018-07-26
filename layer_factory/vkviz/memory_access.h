@@ -176,7 +176,7 @@ struct MemoryAccess {
         : read_or_write(rw), type(IMAGE_MEMORY), image_access(std::move(image_access)), pipeline_stage(pipeline_stage) {}
 
     // Returning a void* only makes sense because we're using the unique objects layer.
-    void* GetHandle() {
+    void* Handle() const {
         if(type == BUFFER_MEMORY) {
             return static_cast<void*>(buffer_access.buffer);
         } else {

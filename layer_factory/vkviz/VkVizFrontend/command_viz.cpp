@@ -1,4 +1,3 @@
-#include <QColor>
 #include <QTreeWidget>
 #include <QString>
 #include <QVariant>
@@ -65,17 +64,54 @@ void AddChild(QTreeWidgetItem* parent, QTreeWidgetItem* child) {
 }
 }  // namespace
 
-void CommandDrawer::ColorHazards(QTreeWidgetItem* widget, const AccessRef& access_location) const {
-    auto hazard_type = capture_->sync.HazardIsSrcOrDst(access_location);
-    if (hazard_type == HazardSrcOrDst::SRC) {
-        ColorWidget(widget, Colors::kHazardSource);
-    } else if (hazard_type == HazardSrcOrDst::DST) {
-        ColorWidget(widget, Colors::kHazardDestination);
+std::pair<bool, QColor> CommandDrawer::AccessColor(QTreeWidgetItem* widget, const MemoryAccess& access,
+                                                   const AccessRef& access_location) const {
+    if (draw_state_ == DrawState::HAZARDS_ALL || draw_state_ == DrawState::HAZARDS_FOR_RESOURCE) {
+        HazardSrcOrDst hazard_type;
+        if (draw_state_ == DrawState::HAZARDS_ALL) {
+            hazard_type = capture_->sync.HazardIsSrcOrDst(access_location);
+        } else {
+            hazard_type = capture_->sync.HazardIsSrcOrDstForResource(access_location, focus_resource_);
+        }
+
+        if (hazard_type == HazardSrcOrDst::SRC)
+            return {true, Colors::kHazardSource};
+        else if (hazard_type == HazardSrcOrDst::DST)
+            return {true, Colors::kHazardDestination};
+    } else {
+        SubmitRelationToBarrier submit_relation;
+        if (CommandRef{access_location.buffer, access_location.command_index} < focus_barrier_location_) {
+            submit_relation = SubmitRelationToBarrier::BEFORE;
+        } else {
+            submit_relation = SubmitRelationToBarrier::AFTER;
+        }
+
+        SyncRelationToBarrier sync_relation;
+        if (draw_state_ == DrawState::BARRIERS_EFFECTS_ALL) {
+            sync_relation = capture_->sync.AccessRelationToBarrier(access, focus_barrier_, submit_relation);
+        } else {
+            sync_relation =
+                capture_->sync.ResourceAccessRelationToBarrier(access, focus_barrier_, focus_resource_, submit_relation);
+        }
+
+        if (sync_relation == SyncRelationToBarrier::BEFORE)
+            return {true, Colors::kBeforeBarrier};
+        else if (sync_relation == SyncRelationToBarrier::AFTER)
+            return {true, Colors::kAfterBarrier};
+    }
+
+    return {false, QColor()};
+}
+
+void CommandDrawer::ColorAccess(QTreeWidgetItem* widget, const MemoryAccess& access, const AccessRef& access_location) const {
+    const auto set_color = AccessColor(widget, access, access_location);
+    if (set_color.first) {
+        ColorWidget(widget, set_color.second);
     }
 }
 
 void CommandDrawer::AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses,
-                                              AccessRef* current_access) const {
+                                              AccessRef* access_location) const {
     for (const auto& access : accesses) {
         std::string access_text;
 
@@ -93,8 +129,10 @@ void CommandDrawer::AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std
 
         QTreeWidgetItem* access_widget = AddChildWidget(parent, access_text);
         AddChildWidget(access_widget, to_string(access.pipeline_stage));
-        ColorHazards(access_widget, *current_access);
-        ++current_access->access_index;
+
+        ColorAccess(access_widget, access, *access_location);
+
+        ++access_location->access_index;
     }
 }
 

@@ -41,6 +41,12 @@ enum class HazardSrcOrDst {
     DST
 };
 
+// Represents whether an access comes before or after a barrier.
+enum class SubmitRelationToBarrier { BEFORE, AFTER };
+
+// Represents whether an access is in the synchronization scope before or after a barrier or neither.
+enum class SyncRelationToBarrier { NONE, BEFORE, AFTER };
+
 enum HazardType {
     WRITE_AFTER_WRITE,
     WRITE_AFTER_READ,
@@ -75,6 +81,7 @@ class SyncTracker {
 
     // Currently we only track and serialize this info so that it's available to the UI.
     std::unordered_map<std::uintptr_t, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>> resource_references;
+    // This map assumes an access causes at most one hazard. I'm not sure how safe that assumption is in practice.
     std::unordered_map<AccessRef, Hazard, AccessRef::Hash> hazards;
     std::unordered_set<std::uintptr_t> resources_with_hazards;
     std::unordered_map<std::uintptr_t, MEMORY_TYPE> resource_types;
@@ -94,7 +101,7 @@ class SyncTracker {
     }
 
     void CheckForHazard(MemoryAccess access, AccessRef access_location) {
-        void* resource = access.GetHandle();
+        void* resource = access.Handle();
 
         MEMORY_TYPE resource_type = access.type;
         READ_WRITE dst_access_rw = access.read_or_write;
@@ -132,7 +139,7 @@ class SyncTracker {
     }
 
     void AddAccess(MemoryAccess access, AccessRef location) {
-        void* resource = access.GetHandle();
+        void* resource = access.Handle();
         AddResourceReference(resource, {location.buffer, location.command_index});
         resource_types[reinterpret_cast<std::uintptr_t>(resource)] = access.type;
 
@@ -181,7 +188,7 @@ class SyncTracker {
         return hazards.find(access_location) != hazards.end();
     }
 
-    bool AccessIsHazardForResource(void* resource, const AccessRef& access_location) const {
+    bool AccessIsHazardForResource(const AccessRef& access_location, void* resource) const {
         if(hazards.find(access_location) != hazards.end()) {
             return false;
         } else {
@@ -189,13 +196,48 @@ class SyncTracker {
         }
     }
 
+    // Checks if the given access has any hazard.
     HazardSrcOrDst HazardIsSrcOrDst(const AccessRef& access_location) const {
         if(!AccessIsHazard(access_location)) return HazardSrcOrDst::NONE;
         else return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
     }
 
+    // Checks if the given access has a hazard for the given resource.
+    HazardSrcOrDst HazardIsSrcOrDstForResource(const AccessRef& access_location, void* resource) const {
+        if (!AccessIsHazardForResource(access_location, resource))
+            return HazardSrcOrDst::NONE;
+        else
+            return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
+    }
+
     bool ResourceHasHazard(const void* resource) const {
         return resources_with_hazards.find(reinterpret_cast<std::uintptr_t>(resource)) != resources_with_hazards.end();
+    }
+
+    // Need to get image and buffer barriers in here too
+    template <typename T>
+    SyncRelationToBarrier AccessRelationToBarrier(const MemoryAccess& access, const T& barrier,
+                                                  SubmitRelationToBarrier submit_relation) const {
+        if (!barrier.AffectsResource(access.Handle()))
+            return SyncRelationToBarrier::NONE;
+        else {
+            if (submit_relation == SubmitRelationToBarrier::BEFORE &&
+                SrcAccessIsBeforeBarrier(access.pipeline_stage, barrier.src_stage_mask))
+                return SyncRelationToBarrier::BEFORE;
+            else if (submit_relation == SubmitRelationToBarrier::AFTER &&
+                     DstAccessIsAfterBarrier(access.pipeline_stage, barrier.dst_stage_mask))
+                return SyncRelationToBarrier::AFTER;
+        }
+    }
+
+    template <typename T>
+    SyncRelationToBarrier ResourceAccessRelationToBarrier(const MemoryAccess& access, const T& barrier, void* resource,
+                                                          SubmitRelationToBarrier submit_relation) const {
+        // This is an abuse of our enum names. There could be a sync relation between this access and the barrier, it's just one not
+        // involving the given resource.
+        if (access.Handle() != resource) return SyncRelationToBarrier::NONE;
+
+        return AccessRelationToBarrer(access, barrier, submit_relation);
     }
 };
 SERIALIZE4(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards);
@@ -262,7 +304,7 @@ inline bool SyncGuaranteesOrdering(VkPipelineStageFlags access_bit, VkPipelineSt
     }
 }
 
-inline bool BarrierHitsOrderingAccess(VkPipelineStageFlags source_bit, VkPipelineStageFlags sync_flags, SyncOrdering ordering) {
+inline bool AccessRelationToBarrier(VkPipelineStageFlags source_bit, VkPipelineStageFlags sync_flags, SyncOrdering ordering) {
     sync_flags = ExpandPipelineBits(sync_flags);
 
     return SyncGuaranteesOrdering(source_bit, sync_flags, ALL_GRAPHICS_BITS, ordering) |
@@ -270,12 +312,12 @@ inline bool BarrierHitsOrderingAccess(VkPipelineStageFlags source_bit, VkPipelin
            SyncGuaranteesOrdering(source_bit, sync_flags, ALL_TRANSFER_BITS, ordering);
 }
 
-inline bool BarrierHitsSrcAccess(VkPipelineStageFlags source_bit, VkPipelineStageFlags sync_flags) {
-    return BarrierHitsOrderingAccess(source_bit, sync_flags, SyncOrdering::BEFORE);
+inline bool SrcAccessIsBeforeBarrier(VkPipelineStageFlags source_bit, VkPipelineStageFlags sync_flags) {
+    return AccessRelationToBarrier(source_bit, sync_flags, SyncOrdering::BEFORE);
 }
 
-inline bool BarrierHitsDstAccess(VkPipelineStageFlags destination_bit, VkPipelineStageFlags sync_flags) {
-    return BarrierHitsOrderingAccess(destination_bit, sync_flags, SyncOrdering::AFTER);
+inline bool DstAccessIsAfterBarrier(VkPipelineStageFlags destination_bit, VkPipelineStageFlags sync_flags) {
+    return AccessRelationToBarrier(destination_bit, sync_flags, SyncOrdering::AFTER);
 }
 
 #endif  // SYNCHRONIZATION_H

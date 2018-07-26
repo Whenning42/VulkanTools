@@ -22,11 +22,18 @@
 #include "string_helpers.h"
 #include "frame_capture.h"
 
+#include <QColor>
 #include <functional>
 #include <sstream>
 #include <memory>
 
 class QTreeWidget;
+
+// Draw cases:
+// 	Current- Highlight all hazards
+// 	To Implement- Highlight hazards on current resource
+// 	To Implement- Hightlight all resources touched by barrier
+// 	To Implement- Highlight this resource touched by barrier
 
 class CommandDrawer {
     // String map
@@ -38,14 +45,18 @@ class CommandDrawer {
 
     const FrameCapture* capture_;
 
-    //void* hazard_resource;
-    //enum HazardDrawStates {
-    //    NONE,
-    //    RESOURCE,
-    //    ALL
-    //}
+    void* focus_resource_;
+    VkVizPipelineBarrier focus_barrier_;
+    CommandRef focus_barrier_location_;
 
-    void ColorHazards(QTreeWidgetItem* item, const AccessRef& access_location) const;
+    enum class DrawState { HAZARDS_ALL, HAZARDS_FOR_RESOURCE, BARRIER_EFFECTS_ALL, BARRIER_EFFECTS_FOR_RESOURCE };
+    DrawState draw_state_ = DrawState::HAZARDS_ALL;
+
+    // Returns which color to set this access to.
+    std::pair<bool, QColor> AccessColor(QTreeWidgetItem* item, const MemoryAccess& access, const AccessRef& access_location) const;
+    // Sets the given access's widget to the color given by AccessColor().
+    void ColorAccess(QTreeWidgetItem* item, const MemoryAccess& access, const AccessRef& access_location) const;
+
     void AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses,
                                    AccessRef* current_access) const;
 
@@ -79,6 +90,19 @@ class CommandDrawer {
 
     QTreeWidgetItem* ToWidget(const VkVizCommandBuffer& command_buffer) const;
     QTreeWidgetItem* RelevantCommandsToWidget(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>& relevant_commands) const;
+
+    // Draw mode functions
+    void ViewAllHazards() { draw_state_ = DrawState::HAZARDS_ALL; }
+    void ViewHazardsForResource(void* resource) {
+        draw_state_ = DrawState::HAZARDS_FOR_RESOURCE;
+        focus_resource_ = resource;
+    }
+
+    void ViewAllBarrierEffects() { draw_state_ = DrawState::BARRIER_EFFECTS_ALL; }
+    void ViewBarrierEffectsForResource(void* resource) {
+        draw_state_ = DrawState::BARRIER_EFFECTS_FOR_RESOURCE;
+        focus_resource_ = resource;
+    }
 };
 
 struct BasicCommandViz {
