@@ -16,10 +16,11 @@
  */
 
 #include "command_buffer_tree.h"
+#include "command_tree_widget_item.h"
 #include "command_viz.h"
 
 void CommandBufferTree::AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
-    buffer_tree_->addTopLevelItem(drawer_.ToWidget(command_buffer));
+    AddTopLevelItem(buffer_tree_, drawer_.ToWidget(command_buffer));
 }
 
 void CommandBufferTree::AddCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers) {
@@ -29,9 +30,9 @@ void CommandBufferTree::AddCommandBuffers(const std::vector<VkVizCommandBuffer>&
 }
 
 void CommandBufferTree::AddFilteredCommandBuffer(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>& relevant_commands) {
-    QTreeWidgetItem* buffer_widget = drawer_.RelevantCommandsToWidget(command_buffer, relevant_commands);
+    CommandTreeWidgetItem* buffer_widget = drawer_.RelevantCommandsToWidget(command_buffer, relevant_commands);
     if(buffer_widget) {
-        buffer_tree_->addTopLevelItem(buffer_widget);
+        AddTopLevelItem(buffer_tree_, buffer_widget);
     }
 }
 

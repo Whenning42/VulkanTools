@@ -35,6 +35,8 @@ struct MemoryBarrier {
         : src_access_mask(barrier.srcAccessMask), dst_access_mask(barrier.dstAccessMask) {}
     MemoryBarrier(VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask)
         : src_access_mask(srcAccessMask), dst_access_mask(dstAccessMask) {}
+
+    virtual bool AffectsResource(void*) const { return true; }
 };
 SERIALIZE2(MemoryBarrier, src_access_mask, dst_access_mask);
 
@@ -46,6 +48,8 @@ struct BufferBarrier : MemoryBarrier {
     BufferBarrier() = default;
     BufferBarrier(const VkBufferMemoryBarrier& barrier)
         : MemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask), buffer(barrier.buffer) {}
+
+    bool AffectsResource(void* resource) const { return resource == buffer; }
 };
 SERIALIZE3(BufferBarrier, src_access_mask, dst_access_mask, buffer);
 
@@ -56,6 +60,8 @@ struct ImageBarrier : MemoryBarrier {
     ImageBarrier() = default;
     ImageBarrier(const VkImageMemoryBarrier& barrier)
         : MemoryBarrier(barrier.srcAccessMask, barrier.dstAccessMask), image(barrier.image) {}
+
+    bool AffectsResource(void* resource) const { return resource == image; }
 };
 SERIALIZE3(ImageBarrier, src_access_mask, dst_access_mask, image);
 

@@ -25,6 +25,7 @@
 #include <unordered_set>
 
 #include "color_tree_widget.h"
+#include "command_tree_widget_item.h"
 #include "command_buffer.h"
 #include "command_viz.h"
 #include "synchronization.h"
@@ -40,13 +41,13 @@ class CommandBufferTree {
     void AddCommand(const CommandWrapper& command);
 
     void OnExpand(QTreeWidgetItem* item) {
-        item->setBackground(0, QColor(255, 255, 255));
+        CommandTreeWidgetItem* tree_item = CommandTreeWidgetItem::FromQItem(item);
+        tree_item->Expand();
     }
 
     void OnCollapse(QTreeWidgetItem* item) {
-        if(!item->data(0, 0x100).isNull()) {
-            item->setBackground(0, item->data(0, 0x100).value<QColor>());
-        }
+        CommandTreeWidgetItem* tree_item = CommandTreeWidgetItem::FromQItem(item);
+        tree_item->Collapse();
     }
 
    public:

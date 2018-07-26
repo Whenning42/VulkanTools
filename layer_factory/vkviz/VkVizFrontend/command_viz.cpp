@@ -6,66 +6,7 @@
 #include "command_viz.h"
 #include "string_helpers.h"
 
-namespace {
-QTreeWidgetItem* NewWidget(const std::string& name) {
-    QTreeWidgetItem* widget = new QTreeWidgetItem();
-    widget->setText(0, QString::fromStdString(name));
-    return widget;
-}
-
-QTreeWidgetItem* AddChildWidget(QTreeWidgetItem* parent, const std::string& child_name) {
-    QTreeWidgetItem* child = NewWidget(child_name);
-    parent->addChild(child);
-    return child;
-}
-
-bool NodeHasColor(QTreeWidgetItem* node) { return !node->data(0, 0x100).isNull(); }
-
-QColor GetNodeColor(QTreeWidgetItem* node) {
-    assert(NodeHasColor(node));
-    return node->data(0, 0x100).value<QColor>();
-}
-
-void SetNodeColor(QTreeWidgetItem* node, QColor color) {
-    node->setData(0, 0x100, QVariant(color));
-    if (!node->isExpanded()) {
-        node->setBackground(0, color);
-    }
-}
-
-// Sets collapse colors up the tree.
-void ColorWidget(QTreeWidgetItem* node, QColor color) {
-    if (!node) return;
-
-    if (!NodeHasColor(node)) {
-        SetNodeColor(node, color);
-    } else {
-        if (GetNodeColor(node) == Colors::MultipleColors) {
-            // This node already is set to multicolored.
-            return;
-        } else if (GetNodeColor(node) != color) {
-            // This node was set to a different color and is now set to multicolored.
-            SetNodeColor(node, Colors::MultipleColors);
-        } else {
-            // This node has already been set to the given color.
-            return;
-        }
-    }
-
-    ColorWidget(node->parent(), color);
-}
-
-// Handles tree custom coloring unlike QTreeWidgetItem::addChild.
-void AddChild(QTreeWidgetItem* parent, QTreeWidgetItem* child) {
-    parent->addChild(child);
-    if (NodeHasColor(child)) {
-        ColorWidget(parent, GetNodeColor(child));
-    }
-}
-}  // namespace
-
-std::pair<bool, QColor> CommandDrawer::AccessColor(QTreeWidgetItem* widget, const MemoryAccess& access,
-                                                   const AccessRef& access_location) const {
+std::pair<bool, QColor> CommandDrawer::AccessColor(const MemoryAccess& access, const AccessRef& access_location) const {
     if (draw_state_ == DrawState::HAZARDS_ALL || draw_state_ == DrawState::HAZARDS_FOR_RESOURCE) {
         HazardSrcOrDst hazard_type;
         if (draw_state_ == DrawState::HAZARDS_ALL) {
@@ -80,18 +21,19 @@ std::pair<bool, QColor> CommandDrawer::AccessColor(QTreeWidgetItem* widget, cons
             return {true, Colors::kHazardDestination};
     } else {
         SubmitRelationToBarrier submit_relation;
-        if (CommandRef{access_location.buffer, access_location.command_index} < focus_barrier_location_) {
+        if (focus_barrier_.AccessComesBefore(*capture_, access_location)) {
             submit_relation = SubmitRelationToBarrier::BEFORE;
         } else {
             submit_relation = SubmitRelationToBarrier::AFTER;
         }
 
         SyncRelationToBarrier sync_relation;
-        if (draw_state_ == DrawState::BARRIERS_EFFECTS_ALL) {
-            sync_relation = capture_->sync.AccessRelationToBarrier(access, focus_barrier_, submit_relation);
+        if (draw_state_ == DrawState::BARRIER_EFFECTS_ALL) {
+            sync_relation = capture_->sync.AccessRelationToBarrier(access, focus_barrier_.barrier, focus_barrier_.src_mask,
+                                                                   focus_barrier_.dst_mask, submit_relation);
         } else {
-            sync_relation =
-                capture_->sync.ResourceAccessRelationToBarrier(access, focus_barrier_, focus_resource_, submit_relation);
+            sync_relation = capture_->sync.ResourceAccessRelationToBarrier(
+                access, focus_barrier_.barrier, focus_barrier_.src_mask, focus_barrier_.dst_mask, focus_resource_, submit_relation);
         }
 
         if (sync_relation == SyncRelationToBarrier::BEFORE)
@@ -103,14 +45,14 @@ std::pair<bool, QColor> CommandDrawer::AccessColor(QTreeWidgetItem* widget, cons
     return {false, QColor()};
 }
 
-void CommandDrawer::ColorAccess(QTreeWidgetItem* widget, const MemoryAccess& access, const AccessRef& access_location) const {
-    const auto set_color = AccessColor(widget, access, access_location);
+void CommandDrawer::ColorAccess(CommandTreeWidgetItem* widget, const MemoryAccess& access, const AccessRef& access_location) const {
+    const auto set_color = AccessColor(access, access_location);
     if (set_color.first) {
-        ColorWidget(widget, set_color.second);
+        widget->SetColor(set_color.second);
     }
 }
 
-void CommandDrawer::AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses,
+void CommandDrawer::AddMemoryAccessesToParent(CommandTreeWidgetItem* parent, const std::vector<MemoryAccess>& accesses,
                                               AccessRef* access_location) const {
     for (const auto& access : accesses) {
         std::string access_text;
@@ -127,8 +69,8 @@ void CommandDrawer::AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std
             access_text += capture_->ResourceName(access.buffer_access.buffer);
         }
 
-        QTreeWidgetItem* access_widget = AddChildWidget(parent, access_text);
-        AddChildWidget(access_widget, to_string(access.pipeline_stage));
+        CommandTreeWidgetItem* access_widget = AddNewChildWidget(parent, access_text);
+        AddNewChildWidget(access_widget, to_string(access.pipeline_stage));
 
         ColorAccess(access_widget, access, *access_location);
 
@@ -136,23 +78,23 @@ void CommandDrawer::AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std
     }
 }
 
-QTreeWidgetItem* CommandDrawer::ToWidget(const BasicCommand& command, const CommandRef& command_location) const {
-    return NewWidget(cmdToString(command.type));
+CommandTreeWidgetItem* CommandDrawer::ToWidget(const BasicCommand& command, const CommandRef& command_location) const {
+    return CommandTreeWidgetItem::NewWidget(cmdToString(command.type));
 }
 
-QTreeWidgetItem* CommandDrawer::ToWidget(const Access& access, const CommandRef& command_location) const {
+CommandTreeWidgetItem* CommandDrawer::ToWidget(const Access& access, const CommandRef& command_location) const {
     AccessRef current_access = {command_location.buffer, command_location.command_index, 0};
-    QTreeWidgetItem* access_widget = ToWidget(static_cast<BasicCommand>(access), command_location);
+    CommandTreeWidgetItem* access_widget = ToWidget(static_cast<BasicCommand>(access), command_location);
     AddMemoryAccessesToParent(access_widget, access.accesses, &current_access);
     return access_widget;
 }
 
-QTreeWidgetItem* CommandDrawer::ToWidget(const DrawCommand& draw_command, const CommandRef& command_location) const {
-    QTreeWidgetItem* draw_widget = ToWidget(static_cast<BasicCommand>(draw_command), command_location);
+CommandTreeWidgetItem* CommandDrawer::ToWidget(const DrawCommand& draw_command, const CommandRef& command_location) const {
+    CommandTreeWidgetItem* draw_widget = ToWidget(static_cast<BasicCommand>(draw_command), command_location);
     AccessRef current_access = {command_location.buffer, command_location.command_index, 0};
 
     for (const auto& stage_access : draw_command.stage_accesses) {
-        QTreeWidgetItem* stage_widget = AddChildWidget(draw_widget, string_VkShaderStageFlagBits(stage_access.first));
+        CommandTreeWidgetItem* stage_widget = AddNewChildWidget(draw_widget, string_VkShaderStageFlagBits(stage_access.first));
         AddMemoryAccessesToParent(stage_widget, stage_access.second, &current_access);
     }
 
@@ -161,7 +103,7 @@ QTreeWidgetItem* CommandDrawer::ToWidget(const DrawCommand& draw_command, const 
 
 namespace {
 template <typename MaskType, typename BitType>
-static void AddBitmask(QTreeWidgetItem* parent, MaskType mask, const std::string& mask_display_name) {
+static void AddBitmask(CommandTreeWidgetItem* parent, MaskType mask, const std::string& mask_display_name) {
     std::vector<std::string> mask_names = MaskNames<MaskType, BitType>(mask);
     if (mask_names.size() == 0) {
         mask_names.push_back("None");
@@ -169,53 +111,54 @@ static void AddBitmask(QTreeWidgetItem* parent, MaskType mask, const std::string
 
     if (mask_names.size() == 1) {
         // If there's only one bit we don't need to make a drop down for it, and can instead display it inline.
-        AddChildWidget(parent, mask_display_name + ": " + mask_names[0]);
+        AddNewChildWidget(parent, mask_display_name + ": " + mask_names[0]);
     } else {
         // Otherwise we add the bits to a dropdown.
-        QTreeWidgetItem* mask_widget = AddChildWidget(parent, mask_display_name);
+        CommandTreeWidgetItem* mask_widget = AddNewChildWidget(parent, mask_display_name);
 
         for (const auto& bit_name : mask_names) {
-            AddChildWidget(mask_widget, bit_name);
+            AddNewChildWidget(mask_widget, bit_name);
         }
     }
 }
 }  // namespace
 
-void CommandDrawer::AddBarrier(QTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const {
+void CommandDrawer::AddBarrier(CommandTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const {
     AddBitmask<VkAccessFlags, VkAccessFlagBits>(barrier_widget, barrier.src_access_mask, "Source Access Mask");
     AddBitmask<VkAccessFlags, VkAccessFlagBits>(barrier_widget, barrier.dst_access_mask, "Destination Access Mask");
 }
 
-void CommandDrawer::AddBarrier(QTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const {
+void CommandDrawer::AddBarrier(CommandTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const {
     AddBarrier(barrier_widget, static_cast<MemoryBarrier>(barrier));
-    AddChildWidget(barrier_widget, capture_->ResourceName(barrier.buffer));
+    AddNewChildWidget(barrier_widget, capture_->ResourceName(barrier.buffer));
 }
 
-void CommandDrawer::AddBarrier(QTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const {
+void CommandDrawer::AddBarrier(CommandTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const {
     AddBarrier(barrier_widget, static_cast<MemoryBarrier>(barrier));
-    AddChildWidget(barrier_widget, capture_->ResourceName(barrier.image));
+    AddNewChildWidget(barrier_widget, capture_->ResourceName(barrier.image));
 }
 
 template <typename T>
-QTreeWidgetItem* CommandDrawer::AddBarriers(QTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
-                                            const std::string& barrier_type) const {
+CommandTreeWidgetItem* CommandDrawer::AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
+                                                  const std::string& barrier_type) const {
     if (barriers.size() > 0) {
-        QTreeWidgetItem* barriers_parent = pipeline_barrier_widget;
+        CommandTreeWidgetItem* barriers_parent = pipeline_barrier_widget;
 
         if (barriers.size() > 1) {
             // If there are multiple barriers of a kind we put them in a dropdown. Otherwise we put them inline.
-            barriers_parent = AddChildWidget(pipeline_barrier_widget, barrier_type + " Barriers");
+            barriers_parent = AddNewChildWidget(pipeline_barrier_widget, barrier_type + " Barriers");
         }
 
         for (uint32_t i = 0; i < barriers.size(); ++i) {
-            QTreeWidgetItem* barrier_widget = AddChildWidget(barriers_parent, barrier_type + " Barrier");
+            CommandTreeWidgetItem* barrier_widget = AddNewChildWidget(barriers_parent, barrier_type + " Barrier");
             AddBarrier(barrier_widget, barriers[i]);
         }
     }
 }
 
-QTreeWidgetItem* CommandDrawer::ToWidget(const PipelineBarrierCommand& barrier_command, const CommandRef& command_location) const {
-    QTreeWidgetItem* pipeline_barrier_widget = ToWidget(static_cast<BasicCommand>(barrier_command), command_location);
+CommandTreeWidgetItem* CommandDrawer::ToWidget(const PipelineBarrierCommand& barrier_command,
+                                               const CommandRef& command_location) const {
+    CommandTreeWidgetItem* pipeline_barrier_widget = ToWidget(static_cast<BasicCommand>(barrier_command), command_location);
 
     AddBitmask<VkPipelineStageFlags, VkPipelineStageFlagBits>(pipeline_barrier_widget, barrier_command.barrier.src_stage_mask,
                                                               "Source Stage Mask");
@@ -228,10 +171,11 @@ QTreeWidgetItem* CommandDrawer::ToWidget(const PipelineBarrierCommand& barrier_c
     return pipeline_barrier_widget;
 }
 
-QTreeWidgetItem* CommandDrawer::FilteredToWidget(
+CommandTreeWidgetItem* CommandDrawer::FilteredToWidget(
     const VkVizCommandBuffer& command_buffer,
     const std::function<bool(uint32_t command_index, const CommandWrapper& command)>& filter) const {
-    QTreeWidgetItem* command_buffer_widget = NewWidget(capture_->ResourceName(command_buffer.Handle()));
+    CommandTreeWidgetItem* command_buffer_widget =
+        CommandTreeWidgetItem::NewWidget(capture_->ResourceName(command_buffer.Handle()));
 
     uint32_t added_commands = 0;
     CommandRef command_location = {command_buffer.Handle(), 0};
@@ -242,7 +186,7 @@ QTreeWidgetItem* CommandDrawer::FilteredToWidget(
             ++added_commands;
 
             CommandWrapperViz command_viz(command);
-            AddChild(command_buffer_widget, command_viz.ToWidget(*this, command_location));
+            command_buffer_widget->addChild(command_viz.ToWidget(*this, command_location));
         }
     }
 
@@ -254,12 +198,12 @@ QTreeWidgetItem* CommandDrawer::FilteredToWidget(
     }
 }
 
-QTreeWidgetItem* CommandDrawer::ToWidget(const VkVizCommandBuffer& command_buffer) const {
+CommandTreeWidgetItem* CommandDrawer::ToWidget(const VkVizCommandBuffer& command_buffer) const {
     return FilteredToWidget(command_buffer, [](uint32_t, const CommandWrapper&) { return true; });
 }
 
-QTreeWidgetItem* CommandDrawer::RelevantCommandsToWidget(const VkVizCommandBuffer& command_buffer,
-                                                         const std::unordered_set<uint32_t>& relevant_commands) const {
+CommandTreeWidgetItem* CommandDrawer::RelevantCommandsToWidget(const VkVizCommandBuffer& command_buffer,
+                                                               const std::unordered_set<uint32_t>& relevant_commands) const {
     auto relevant_command_filter = [&relevant_commands](int command_index, const CommandWrapper& command) {
         return relevant_commands.find(command_index) != relevant_commands.end() || command.IsGlobalBarrier();
     };

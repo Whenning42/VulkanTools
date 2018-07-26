@@ -73,175 +73,6 @@ struct Hazard {
 };
 SERIALIZE4(Hazard, src_access, dst_access, type, resource);
 
-class SyncTracker {
- public:
-    // We assume we're using unique objects layer so that each resource can be uniquely referenced by a pointer. Also, for some
-    // reason, the json library we're using doesn't like to serialize unordered_maps with pointers as keys. We use uintptr_t as our
-    // key to work around this.
-
-    // Currently we only track and serialize this info so that it's available to the UI.
-    std::unordered_map<std::uintptr_t, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>> resource_references;
-    // This map assumes an access causes at most one hazard. I'm not sure how safe that assumption is in practice.
-    std::unordered_map<AccessRef, Hazard, AccessRef::Hash> hazards;
-    std::unordered_set<std::uintptr_t> resources_with_hazards;
-    std::unordered_map<std::uintptr_t, MEMORY_TYPE> resource_types;
-
- private:
-    std::array<std::unordered_map<void*, std::array<std::vector<AccessRef>, 2>>, 2> outstanding_accesses;
-
-    template<typename T>
-    void AddResourceReference(T* resource, CommandRef location) {
-        resource_references[reinterpret_cast<std::uintptr_t>(resource)][location.buffer].insert(location.command_index);
-    }
-
-    template<typename T>
-    void AddHazard(T* resource, const AccessRef& src_access, const AccessRef& dst_access, const HazardType& hazard_type) {
-        hazards[src_access] = {src_access, dst_access, hazard_type, reinterpret_cast<std::uintptr_t>(resource)};
-        hazards[dst_access] = {src_access, dst_access, hazard_type, reinterpret_cast<std::uintptr_t>(resource)};
-    }
-
-    void CheckForHazard(MemoryAccess access, AccessRef access_location) {
-        void* resource = access.Handle();
-
-        MEMORY_TYPE resource_type = access.type;
-        READ_WRITE dst_access_rw = access.read_or_write;
-
-        for(READ_WRITE src_access_rw : {READ, WRITE}) {
-            if(!ReadWriteTypesCauseHazard(src_access_rw, dst_access_rw)) continue;
-
-            std::vector<AccessRef> outstanding_src_accesses = outstanding_accesses[resource_type][resource][src_access_rw];
-            for(const auto& outstanding_src_access : outstanding_src_accesses) {
-                if(outstanding_src_access.buffer != access_location.buffer) {
-                    AddHazard(resource, outstanding_src_access, access_location, GetHazardType(src_access_rw, dst_access_rw));
-                    resources_with_hazards.insert(reinterpret_cast<std::uintptr_t>(resource));
-                }
-            }
-        }
-    }
-
-    void ClearOutstanding(const MemoryBarrier& barrier, CommandRef location) {
-        outstanding_accesses[IMAGE_MEMORY].clear();
-        outstanding_accesses[BUFFER_MEMORY].clear();
-    }
-
-    void ClearOutstanding(const BufferBarrier& barrier, CommandRef location) {
-        outstanding_accesses[BUFFER_MEMORY][barrier.buffer][READ].clear();
-        outstanding_accesses[BUFFER_MEMORY][barrier.buffer][WRITE].clear();
-
-        AddResourceReference(barrier.buffer, location);
-    }
-
-    void ClearOutstanding(const ImageBarrier& barrier, CommandRef location) {
-        outstanding_accesses[IMAGE_MEMORY][barrier.image][READ].clear();
-        outstanding_accesses[IMAGE_MEMORY][barrier.image][WRITE].clear();
-
-        AddResourceReference(barrier.image, location);
-    }
-
-    void AddAccess(MemoryAccess access, AccessRef location) {
-        void* resource = access.Handle();
-        AddResourceReference(resource, {location.buffer, location.command_index});
-        resource_types[reinterpret_cast<std::uintptr_t>(resource)] = access.type;
-
-        CheckForHazard(access, location);
-
-        outstanding_accesses[access.type][resource][access.read_or_write].push_back(location);
-    }
-
-  public:
-    void AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
-        CommandRef current_command = {command_buffer.Handle(), 0};
-
-        for(const auto& command : command_buffer.Commands()) {
-
-            std::vector<MemoryAccess> command_accesses = command.GetAllAccesses();
-            for(uint32_t access_index=0; access_index<command_accesses.size(); ++access_index) {
-                AccessRef access_location{current_command.buffer, current_command.command_index, access_index};
-                AddAccess(command_accesses[access_index], access_location);
-            }
-
-            if(command.IsPipelineBarrier()) {
-                const VkVizPipelineBarrier& pipeline_barrier = command.Unwrap<PipelineBarrierCommand>().barrier;
-                for(const auto& barrier : pipeline_barrier.global_barriers) {
-                    ClearOutstanding(barrier, current_command);
-                }
-                for(const auto& barrier : pipeline_barrier.buffer_barriers) {
-                    ClearOutstanding(barrier, current_command);
-                }
-                for(const auto& barrier : pipeline_barrier.image_barriers) {
-                    ClearOutstanding(barrier, current_command);
-                }
-            }
-
-            current_command.command_index++;
-        }
-    }
-
-    void AddCommandBuffers(const std::vector<std::reference_wrapper<VkVizCommandBuffer>>& command_buffers) {
-        for(const VkVizCommandBuffer& command_buffer : command_buffers) {
-            AddCommandBuffer(command_buffer);
-        }
-    }
-
-    // Sync logic to enable frontend features.
-    bool AccessIsHazard(const AccessRef& access_location) const {
-        return hazards.find(access_location) != hazards.end();
-    }
-
-    bool AccessIsHazardForResource(const AccessRef& access_location, void* resource) const {
-        if(hazards.find(access_location) != hazards.end()) {
-            return false;
-        } else {
-            return hazards.at(access_location).resource == reinterpret_cast<std::uintptr_t>(resource);
-        }
-    }
-
-    // Checks if the given access has any hazard.
-    HazardSrcOrDst HazardIsSrcOrDst(const AccessRef& access_location) const {
-        if(!AccessIsHazard(access_location)) return HazardSrcOrDst::NONE;
-        else return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
-    }
-
-    // Checks if the given access has a hazard for the given resource.
-    HazardSrcOrDst HazardIsSrcOrDstForResource(const AccessRef& access_location, void* resource) const {
-        if (!AccessIsHazardForResource(access_location, resource))
-            return HazardSrcOrDst::NONE;
-        else
-            return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
-    }
-
-    bool ResourceHasHazard(const void* resource) const {
-        return resources_with_hazards.find(reinterpret_cast<std::uintptr_t>(resource)) != resources_with_hazards.end();
-    }
-
-    // Need to get image and buffer barriers in here too
-    template <typename T>
-    SyncRelationToBarrier AccessRelationToBarrier(const MemoryAccess& access, const T& barrier,
-                                                  SubmitRelationToBarrier submit_relation) const {
-        if (!barrier.AffectsResource(access.Handle()))
-            return SyncRelationToBarrier::NONE;
-        else {
-            if (submit_relation == SubmitRelationToBarrier::BEFORE &&
-                SrcAccessIsBeforeBarrier(access.pipeline_stage, barrier.src_stage_mask))
-                return SyncRelationToBarrier::BEFORE;
-            else if (submit_relation == SubmitRelationToBarrier::AFTER &&
-                     DstAccessIsAfterBarrier(access.pipeline_stage, barrier.dst_stage_mask))
-                return SyncRelationToBarrier::AFTER;
-        }
-    }
-
-    template <typename T>
-    SyncRelationToBarrier ResourceAccessRelationToBarrier(const MemoryAccess& access, const T& barrier, void* resource,
-                                                          SubmitRelationToBarrier submit_relation) const {
-        // This is an abuse of our enum names. There could be a sync relation between this access and the barrier, it's just one not
-        // involving the given resource.
-        if (access.Handle() != resource) return SyncRelationToBarrier::NONE;
-
-        return AccessRelationToBarrer(access, barrier, submit_relation);
-    }
-};
-SERIALIZE4(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards);
-
 static VkPipelineStageFlags ALL_GRAPHICS_BITS =
     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
@@ -319,5 +150,192 @@ inline bool SrcAccessIsBeforeBarrier(VkPipelineStageFlags source_bit, VkPipeline
 inline bool DstAccessIsAfterBarrier(VkPipelineStageFlags destination_bit, VkPipelineStageFlags sync_flags) {
     return AccessRelationToBarrier(destination_bit, sync_flags, SyncOrdering::AFTER);
 }
+
+class SyncTracker {
+ public:
+    // We assume we're using unique objects layer so that each resource can be uniquely referenced by a pointer. Also, for some
+    // reason, the json library we're using doesn't like to serialize unordered_maps with pointers as keys. We use uintptr_t as our
+    // key to work around this.
+
+    // Currently we only track and serialize this info so that it's available to the UI.
+    std::unordered_map<std::uintptr_t, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>> resource_references;
+    // This map assumes an access causes at most one hazard. I'm not sure how safe that assumption is in practice.
+    std::unordered_map<AccessRef, Hazard, AccessRef::Hash> hazards;
+    std::unordered_set<std::uintptr_t> resources_with_hazards;
+    std::unordered_map<std::uintptr_t, MEMORY_TYPE> resource_types;
+    std::unordered_map<VkCommandBuffer, uint32_t> command_buffer_submit_order;
+
+   private:
+    uint32_t current_command_buffer_index = 0;
+    std::array<std::unordered_map<void*, std::array<std::vector<AccessRef>, 2>>, 2> outstanding_accesses;
+
+    template<typename T>
+    void AddResourceReference(T* resource, CommandRef location) {
+        resource_references[reinterpret_cast<std::uintptr_t>(resource)][location.buffer].insert(location.command_index);
+    }
+
+    template<typename T>
+    void AddHazard(T* resource, const AccessRef& src_access, const AccessRef& dst_access, const HazardType& hazard_type) {
+        hazards[src_access] = {src_access, dst_access, hazard_type, reinterpret_cast<std::uintptr_t>(resource)};
+        hazards[dst_access] = {src_access, dst_access, hazard_type, reinterpret_cast<std::uintptr_t>(resource)};
+    }
+
+    void CheckForHazard(MemoryAccess access, AccessRef access_location) {
+        void* resource = access.Handle();
+
+        MEMORY_TYPE resource_type = access.type;
+        READ_WRITE dst_access_rw = access.read_or_write;
+
+        for(READ_WRITE src_access_rw : {READ, WRITE}) {
+            if(!ReadWriteTypesCauseHazard(src_access_rw, dst_access_rw)) continue;
+
+            std::vector<AccessRef> outstanding_src_accesses = outstanding_accesses[resource_type][resource][src_access_rw];
+            for(const auto& outstanding_src_access : outstanding_src_accesses) {
+                if(outstanding_src_access.buffer != access_location.buffer) {
+                    AddHazard(resource, outstanding_src_access, access_location, GetHazardType(src_access_rw, dst_access_rw));
+                    resources_with_hazards.insert(reinterpret_cast<std::uintptr_t>(resource));
+                }
+            }
+        }
+    }
+
+    void ClearOutstanding(const MemoryBarrier& barrier, CommandRef location) {
+        outstanding_accesses[IMAGE_MEMORY].clear();
+        outstanding_accesses[BUFFER_MEMORY].clear();
+    }
+
+    void ClearOutstanding(const BufferBarrier& barrier, CommandRef location) {
+        outstanding_accesses[BUFFER_MEMORY][barrier.buffer][READ].clear();
+        outstanding_accesses[BUFFER_MEMORY][barrier.buffer][WRITE].clear();
+
+        AddResourceReference(barrier.buffer, location);
+    }
+
+    void ClearOutstanding(const ImageBarrier& barrier, CommandRef location) {
+        outstanding_accesses[IMAGE_MEMORY][barrier.image][READ].clear();
+        outstanding_accesses[IMAGE_MEMORY][barrier.image][WRITE].clear();
+
+        AddResourceReference(barrier.image, location);
+    }
+
+    void AddAccess(MemoryAccess access, AccessRef location) {
+        void* resource = access.Handle();
+        AddResourceReference(resource, {location.buffer, location.command_index});
+        resource_types[reinterpret_cast<std::uintptr_t>(resource)] = access.type;
+
+        CheckForHazard(access, location);
+
+        outstanding_accesses[access.type][resource][access.read_or_write].push_back(location);
+    }
+
+  public:
+    void AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
+        CommandRef current_command = {command_buffer.Handle(), 0};
+        command_buffer_submit_order[command_buffer.Handle()] = current_command_buffer_index;
+
+        for(const auto& command : command_buffer.Commands()) {
+
+            std::vector<MemoryAccess> command_accesses = command.GetAllAccesses();
+            for(uint32_t access_index=0; access_index<command_accesses.size(); ++access_index) {
+                AccessRef access_location{current_command.buffer, current_command.command_index, access_index};
+                AddAccess(command_accesses[access_index], access_location);
+            }
+
+            if(command.IsPipelineBarrier()) {
+                const VkVizPipelineBarrier& pipeline_barrier = command.Unwrap<PipelineBarrierCommand>().barrier;
+                for(const auto& barrier : pipeline_barrier.global_barriers) {
+                    ClearOutstanding(barrier, current_command);
+                }
+                for(const auto& barrier : pipeline_barrier.buffer_barriers) {
+                    ClearOutstanding(barrier, current_command);
+                }
+                for(const auto& barrier : pipeline_barrier.image_barriers) {
+                    ClearOutstanding(barrier, current_command);
+                }
+            }
+
+            current_command.command_index++;
+        }
+        current_command_buffer_index++;
+    }
+
+    void AddCommandBuffers(const std::vector<std::reference_wrapper<VkVizCommandBuffer>>& command_buffers) {
+        for(const VkVizCommandBuffer& command_buffer : command_buffers) {
+            AddCommandBuffer(command_buffer);
+        }
+    }
+
+    // Sync logic to enable frontend features.
+
+    uint32_t BufferSubmitIndex(const CommandRef& command) const { return command_buffer_submit_order.at(command.buffer); }
+
+    bool CommandComesBeforeOther(const CommandRef& a, const CommandRef& b) const {
+        if (BufferSubmitIndex(a) < BufferSubmitIndex(b))
+            return true;
+        else if (BufferSubmitIndex(a) == BufferSubmitIndex(b))
+            return a.command_index < b.command_index;
+        else
+            return false;
+    }
+
+    bool AccessIsHazard(const AccessRef& access_location) const {
+        return hazards.find(access_location) != hazards.end();
+    }
+
+    bool AccessIsHazardForResource(const AccessRef& access_location, void* resource) const {
+        if(hazards.find(access_location) != hazards.end()) {
+            return false;
+        } else {
+            return hazards.at(access_location).resource == reinterpret_cast<std::uintptr_t>(resource);
+        }
+    }
+
+    // Checks if the given access has any hazard.
+    HazardSrcOrDst HazardIsSrcOrDst(const AccessRef& access_location) const {
+        if(!AccessIsHazard(access_location)) return HazardSrcOrDst::NONE;
+        else return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
+    }
+
+    // Checks if the given access has a hazard for the given resource.
+    HazardSrcOrDst HazardIsSrcOrDstForResource(const AccessRef& access_location, void* resource) const {
+        if (!AccessIsHazardForResource(access_location, resource))
+            return HazardSrcOrDst::NONE;
+        else
+            return hazards.at(access_location).src_access == access_location ? HazardSrcOrDst::SRC : HazardSrcOrDst::DST;
+    }
+
+    bool ResourceHasHazard(const void* resource) const {
+        return resources_with_hazards.find(reinterpret_cast<std::uintptr_t>(resource)) != resources_with_hazards.end();
+    }
+
+    // Need to get image and buffer barriers in here too
+    template <typename T>
+    SyncRelationToBarrier AccessRelationToBarrier(const MemoryAccess& access, const T& barrier, VkPipelineStageFlags src_stage_mask,
+                                                  VkPipelineStageFlags dst_stage_mask,
+                                                  SubmitRelationToBarrier submit_relation) const {
+        if (!barrier->AffectsResource(access.Handle()))
+            return SyncRelationToBarrier::NONE;
+        else {
+            if (submit_relation == SubmitRelationToBarrier::BEFORE &&
+                SrcAccessIsBeforeBarrier(access.pipeline_stage, src_stage_mask))
+                return SyncRelationToBarrier::BEFORE;
+            else if (submit_relation == SubmitRelationToBarrier::AFTER &&
+                     DstAccessIsAfterBarrier(access.pipeline_stage, dst_stage_mask))
+                return SyncRelationToBarrier::AFTER;
+        }
+    }
+
+    template <typename T>
+    SyncRelationToBarrier ResourceAccessRelationToBarrier(const MemoryAccess& access, const T& barrier,
+                                                          VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dst_stage_mask,
+                                                          void* resource, SubmitRelationToBarrier submit_relation) const {
+        // This is an abuse of our enum names. There could be a sync relation between this access and the barrier, it's just one not
+        // involving the given resource.
+        if (access.Handle() != resource) return SyncRelationToBarrier::NONE;
+
+        return AccessRelationToBarrier(access, barrier, src_stage_mask, dst_stage_mask, submit_relation);
+    }
+};
+SERIALIZE4(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards);
 
 #endif  // SYNCHRONIZATION_H
