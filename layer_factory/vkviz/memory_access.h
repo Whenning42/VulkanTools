@@ -167,12 +167,13 @@ struct MemoryAccess {
     MEMORY_TYPE type;
     BufferAccess buffer_access;
     ImageAccess image_access;
+    VkPipelineStageFlagBits pipeline_stage;
 
-    MemoryAccess() = default;
-    MemoryAccess(READ_WRITE rw, BufferAccess buffer_access)
-        : read_or_write(rw), type(BUFFER_MEMORY), buffer_access(std::move(buffer_access)) {}
-    MemoryAccess(READ_WRITE rw, ImageAccess image_access)
-        : read_or_write(rw), type(IMAGE_MEMORY), image_access(std::move(image_access)) {}
+    MemoryAccess(){};
+    MemoryAccess(READ_WRITE rw, BufferAccess buffer_access, VkPipelineStageFlagBits pipeline_stage)
+        : read_or_write(rw), type(BUFFER_MEMORY), buffer_access(std::move(buffer_access)), pipeline_stage(pipeline_stage) {}
+    MemoryAccess(READ_WRITE rw, ImageAccess image_access, VkPipelineStageFlagBits pipeline_stage)
+        : read_or_write(rw), type(IMAGE_MEMORY), image_access(std::move(image_access)), pipeline_stage(pipeline_stage) {}
 
     // Returning a void* only makes sense because we're using the unique objects layer.
     void* GetHandle() {
@@ -184,76 +185,30 @@ struct MemoryAccess {
     }
 
     template <typename T>
-    static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions) {
+    static MemoryAccess Image(READ_WRITE rw, VkImage image, uint32_t regionCount, const T* pRegions,
+                              VkPipelineStageFlagBits pipeline_stage) {
         std::vector<ImageRegion> regions;
         for(uint32_t i=0; i<regionCount; ++i) {
             regions.push_back(ImageRegion(rw, pRegions[i]));
         }
-        return MemoryAccess(rw, ImageAccess({image, std::move(regions)}));
+        return MemoryAccess(rw, ImageAccess({image, std::move(regions)}), pipeline_stage);
     }
 
     template <typename T>
-    static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
+    static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, uint32_t regionCount, const T* pRegions,
+                               VkPipelineStageFlagBits pipeline_stage) {
         std::vector<BufferRegion> regions;
         for(uint32_t i=0; i<regionCount; ++i) {
             regions.push_back(BufferRegion(rw, pRegions[i]));
         }
-        return MemoryAccess(rw, BufferAccess{buffer, std::move(regions)});
+        return MemoryAccess(rw, BufferAccess{buffer, std::move(regions)}, pipeline_stage);
     }
 
-    static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
-        return MemoryAccess(rw, BufferAccess{buffer, {BufferRegion(offset, size)}});
-    }
-
-    template <typename T>
-    static MemoryAccess ImageView(READ_WRITE rw, VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
-        // std::vector<ImageRegion> regions = ImageRegion(image_view, regionCount, pRegions);
-        // Not yet implemented
-        assert(0);
-        return Image(rw, image_view.Image(), regionCount, pRegions);
+    static MemoryAccess Buffer(READ_WRITE rw, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size,
+                               VkPipelineStageFlagBits pipeline_stage) {
+        return MemoryAccess(rw, BufferAccess{buffer, {BufferRegion(offset, size)}}, pipeline_stage);
     }
 };
-SERIALIZE4(MemoryAccess, read_or_write, type, image_access, buffer_access);
-
-template <typename T>
-inline MemoryAccess ImageRead(VkImage image, uint32_t regionCount, const T* pRegions) {
-    return MemoryAccess::Image(READ, image, regionCount, pRegions);
-}
-
-template <typename T>
-inline MemoryAccess ImageWrite(VkImage image, uint32_t regionCount, const T* pRegions) {
-    return MemoryAccess::Image(WRITE, image, regionCount, pRegions);
-}
-
-// Generates corresponding ImageRead()
-template <typename T>
-inline MemoryAccess ImageViewRead(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
-    assert(0);
-    // return MemoryAccess::ImageView(READ, image_view, regionCount, pRegions);
-}
-
-// Generates corresponding ImageWrite()
-template <typename T>
-inline MemoryAccess ImageViewWrite(VkVizImageView image_view, uint32_t regionCount, const T* pRegions) {
-    return MemoryAccess::ImageView(WRITE, image_view, regionCount, pRegions);
-}
-
-template <typename T>
-inline MemoryAccess BufferRead(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
-    return MemoryAccess::Buffer(READ, buffer, regionCount, pRegions);
-}
-
-inline MemoryAccess BufferRead(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
-    return MemoryAccess::Buffer(READ, buffer, offset, size);
-}
-
-template <typename T>
-inline MemoryAccess BufferWrite(VkBuffer buffer, uint32_t regionCount, const T* pRegions) {
-    return MemoryAccess::Buffer(WRITE, buffer, regionCount, pRegions);
-}
-
-inline MemoryAccess BufferWrite(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size) {
-    return MemoryAccess::Buffer(WRITE, buffer, offset, size);
-}
+SERIALIZE5(MemoryAccess, read_or_write, type, image_access, buffer_access, pipeline_stage);
 
 #endif  // MEMORY_ACCESS_H

@@ -5,6 +5,7 @@
 
 #include "color_tree_widget.h"
 #include "command_viz.h"
+#include "string_helpers.h"
 
 namespace {
 QTreeWidgetItem* NewWidget(const std::string& name) {
@@ -91,6 +92,7 @@ void CommandDrawer::AddMemoryAccessesToParent(QTreeWidgetItem* parent, const std
         }
 
         QTreeWidgetItem* access_widget = AddChildWidget(parent, access_text);
+        AddChildWidget(access_widget, to_string(access.pipeline_stage));
         ColorHazards(access_widget, *current_access);
         ++current_access->access_index;
     }

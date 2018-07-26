@@ -200,4 +200,82 @@ class SyncTracker {
 };
 SERIALIZE4(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards);
 
+static VkPipelineStageFlags ALL_GRAPHICS_BITS =
+    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
+    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
+    VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |
+    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+static VkPipelineStageFlags ALL_COMPUTE_BITS = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT |
+                                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+static VkPipelineStageFlags ALL_TRANSFER_BITS =
+    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+static VkPipelineStageFlags ALL_BITS = 0x001ffff;
+
+inline VkPipelineStageFlags ExpandPipelineBits(VkPipelineStageFlags flag) {
+    if (flag & VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT) {
+        flag = flag | ALL_GRAPHICS_BITS;
+    }
+    if (flag & VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) {
+        flag = flag | ALL_BITS;
+    }
+    return flag;
+}
+
+enum class SyncOrdering { BEFORE, AFTER };
+
+// Asserts that at least one bit is set in stage_flags.
+inline VkPipelineStageFlags EarliestStage(VkPipelineStageFlags stage_flags) {
+    assert(stage_flags != 0);
+    VkPipelineStageFlags earliest_stage = 0;
+    for (int bit = 0; bit < 32; ++bit) {
+        if (bit & stage_flags) return 1 << bit;
+    }
+}
+
+// Asserts that at least one bit is set in stage_flags.
+inline VkPipelineStageFlags LatestStage(VkPipelineStageFlags stage_flags) {
+    assert(stage_flags != 0);
+    VkPipelineStageFlags earliest_stage = 0;
+    for (int bit = 31; bit >= 0; --bit) {
+        if (bit & stage_flags) return 1 << bit;
+    }
+}
+
+// Checks whether or not a pipeline barrier's pipeline stage flags catch a pipeline stage flag in the before or after
+// synchronization scopes of the barrier.
+inline bool SyncGuaranteesOrdering(VkPipelineStageFlags access_bit, VkPipelineStageFlags sync_flags,
+                                   VkPipelineStageFlags implicit_scope_mask, SyncOrdering ordering) {
+    // These early returns are for when access_bit or sync_flags aren't in the given scope, i.e. access_bit is a graphics pipeline
+    // stage and sync_flags are graphics pipeline stages and we're using the compute stages mask.
+    VkPipelineStageFlags scoped_sync_flags = sync_flags & implicit_scope_mask;
+    if (access_bit & implicit_scope_mask == 0) return false;
+    if (scoped_sync_flags == 0) return false;
+
+    if (ordering == SyncOrdering::BEFORE) {
+        return access_bit <= LatestStage(scoped_sync_flags);
+    } else {
+        return access_bit >= EarliestStage(scoped_sync_flags);
+    }
+}
+
+inline bool BarrierHitsOrderingAccess(VkPipelineStageFlags source_bit, VkPipelineStageFlags sync_flags, SyncOrdering ordering) {
+    sync_flags = ExpandPipelineBits(sync_flags);
+
+    return SyncGuaranteesOrdering(source_bit, sync_flags, ALL_GRAPHICS_BITS, ordering) |
+           SyncGuaranteesOrdering(source_bit, sync_flags, ALL_COMPUTE_BITS, ordering) |
+           SyncGuaranteesOrdering(source_bit, sync_flags, ALL_TRANSFER_BITS, ordering);
+}
+
+inline bool BarrierHitsSrcAccess(VkPipelineStageFlags source_bit, VkPipelineStageFlags sync_flags) {
+    return BarrierHitsOrderingAccess(source_bit, sync_flags, SyncOrdering::BEFORE);
+}
+
+inline bool BarrierHitsDstAccess(VkPipelineStageFlags destination_bit, VkPipelineStageFlags sync_flags) {
+    return BarrierHitsOrderingAccess(destination_bit, sync_flags, SyncOrdering::AFTER);
+}
+
 #endif  // SYNCHRONIZATION_H

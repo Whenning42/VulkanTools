@@ -94,7 +94,9 @@ void VkVizCommandBuffer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindi
 
 void VkVizCommandBuffer::BlitImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,
                                    uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) {
-    commands_.emplace_back(Access(CMD_BLITIMAGE, {ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
+    commands_.emplace_back(
+        Access(CMD_BLITIMAGE, {MemoryAccess::Image(READ, srcImage, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT),
+                               MemoryAccess::Image(WRITE, dstImage, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT)}));
 }
 
 /* Unfinished code for handling VkCmdClearColorImage
@@ -133,35 +135,42 @@ void VkVizCommandBuffer::ClearAttachments(uint32_t attachmentCount, const VkClea
 
 void VkVizCommandBuffer::ClearColorImage(VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor,
                                          uint32_t rangeCount, const VkImageSubresourceRange* pRanges) {
-    commands_.emplace_back(Access(CMD_CLEARCOLORIMAGE, ImageWrite(image, rangeCount, pRanges)));
+    commands_.emplace_back(
+        Access(CMD_CLEARCOLORIMAGE, MemoryAccess::Image(WRITE, image, rangeCount, pRanges, VK_PIPELINE_STAGE_TRANSFER_BIT)));
 }
 
 void VkVizCommandBuffer::ClearDepthStencilImage(VkImage image, VkImageLayout imageLayout,
                                                 const VkClearDepthStencilValue* pDepthStencil, uint32_t rangeCount,
                                                 const VkImageSubresourceRange* pRanges) {
-    commands_.emplace_back(Access(CMD_CLEARDEPTHSTENCILIMAGE, ImageWrite(image, rangeCount, pRanges)));
+    commands_.emplace_back(
+        Access(CMD_CLEARDEPTHSTENCILIMAGE, MemoryAccess::Image(WRITE, image, rangeCount, pRanges, VK_PIPELINE_STAGE_TRANSFER_BIT)));
 }
 
 void VkVizCommandBuffer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) {
-    commands_.emplace_back(Access(CMD_COPYBUFFER, {BufferRead(srcBuffer, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)}));
+    commands_.emplace_back(
+        Access(CMD_COPYBUFFER, {MemoryAccess::Buffer(READ, srcBuffer, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT),
+                                MemoryAccess::Buffer(WRITE, dstBuffer, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT)}));
 }
 
 void VkVizCommandBuffer::CopyBufferToImage(VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount,
                                            const VkBufferImageCopy* pRegions) {
-    commands_.emplace_back(
-        Access(CMD_COPYBUFFERTOIMAGE, {BufferRead(srcBuffer, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
+    commands_.emplace_back(Access(CMD_COPYBUFFERTOIMAGE,
+                                  {MemoryAccess::Buffer(READ, srcBuffer, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT),
+                                   MemoryAccess::Image(WRITE, dstImage, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT)}));
 }
 
 void VkVizCommandBuffer::CopyImage(VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout,
                                    uint32_t regionCount, const VkImageCopy* pRegions) {
     commands_.emplace_back(
-        Access(CMD_COPYIMAGE, {ImageRead(srcImage, regionCount, pRegions), ImageWrite(dstImage, regionCount, pRegions)}));
+        Access(CMD_COPYIMAGE, {MemoryAccess::Image(READ, srcImage, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT),
+                               MemoryAccess::Image(WRITE, dstImage, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT)}));
 }
 
 void VkVizCommandBuffer::CopyImageToBuffer(VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount,
                                            const VkBufferImageCopy* pRegions) {
-    commands_.emplace_back(
-        Access(CMD_COPYIMAGETOBUFFER, {ImageRead(srcImage, regionCount, pRegions), BufferWrite(dstBuffer, regionCount, pRegions)}));
+    commands_.emplace_back(Access(CMD_COPYIMAGETOBUFFER,
+                                  {MemoryAccess::Image(READ, srcImage, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT),
+                                   MemoryAccess::Buffer(WRITE, dstBuffer, regionCount, pRegions, VK_PIPELINE_STAGE_TRANSFER_BIT)}));
 }
 
 void VkVizCommandBuffer::CopyQueryPoolResults(VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,
@@ -211,6 +220,25 @@ void VkVizCommandBuffer::DispatchIndirect(VkBuffer buffer, VkDeviceSize offset) 
     commands_.emplace_back(BasicCommand(CMD_DISPATCHINDIRECT));
 }
 
+VkPipelineStageFlagBits ShaderToPipelineStage(VkShaderStageFlags stage_flag) {
+    switch (stage_flag) {
+        case (VK_SHADER_STAGE_VERTEX_BIT):
+            return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+        case (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT):
+            return VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+        case (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT):
+            return VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+        case (VK_SHADER_STAGE_GEOMETRY_BIT):
+            return VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+        case (VK_SHADER_STAGE_FRAGMENT_BIT):
+            return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        case (VK_SHADER_STAGE_COMPUTE_BIT):
+            return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        default:
+            assert(0);
+    }
+}
+
 std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> VkVizCommandBuffer::GraphicsPipelineAccesses() {
     std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> pipeline_accesses;
 
@@ -233,14 +261,17 @@ std::vector<std::pair<VkShaderStageFlagBits, std::vector<MemoryAccess>>> VkVizCo
                     VkImageView image_view = descriptor.ImageView();
                     VkImage image = device_->ImageFromView(image_view);
                     VkImageBlit dummy_blit;
-                    stage_accesses.emplace_back(MemoryAccess::Image(read_or_write, image, 0, &dummy_blit));
+                    stage_accesses.emplace_back(
+                        MemoryAccess::Image(read_or_write, image, 0, &dummy_blit, ShaderToPipelineStage(stage.stage_flag)));
                 } else if(descriptor.descriptor_type == BUFFER_DESCRIPTOR) {
                     VkBuffer buffer = descriptor.Buffer();
-                    stage_accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
+                    stage_accesses.emplace_back(
+                        MemoryAccess::Buffer(read_or_write, buffer, 0, 0, ShaderToPipelineStage(stage.stage_flag)));
                 } else {
                     VkBufferView buffer_view = descriptor.BufferView();
                     VkBuffer buffer = device_->BufferFromView(buffer_view);
-                    stage_accesses.emplace_back(MemoryAccess::Buffer(read_or_write, buffer, 0, 0));
+                    stage_accesses.emplace_back(
+                        MemoryAccess::Buffer(read_or_write, buffer, 0, 0, ShaderToPipelineStage(stage.stage_flag)));
                 }
             }
         }
@@ -307,7 +338,8 @@ void VkVizCommandBuffer::ExecuteCommands(uint32_t commandBufferCount, const VkCo
 }
 
 void VkVizCommandBuffer::FillBuffer(VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data) {
-    commands_.emplace_back(Access(CMD_FILLBUFFER, BufferWrite(dstBuffer, dstOffset, size)));
+    commands_.emplace_back(
+        Access(CMD_FILLBUFFER, MemoryAccess::Buffer(WRITE, dstBuffer, dstOffset, size, VK_PIPELINE_STAGE_TRANSFER_BIT)));
 }
 
 void VkVizCommandBuffer::InsertDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT* pLabelInfo) {
