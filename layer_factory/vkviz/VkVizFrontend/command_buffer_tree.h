@@ -50,11 +50,20 @@ class CommandBufferTree {
         tree_item->Collapse();
     }
 
+    void OnActivated(QTreeWidgetItem* item) {
+        CommandTreeWidgetItem* tree_item = CommandTreeWidgetItem::FromQItem(item);
+        if(tree_item->HasBarrierOccurance()) {
+            //drawer_.ShowAllBarrierEffects(tree_item->GetBarrierOccurance());
+            drawer_.ShowAllHazards();
+        }
+    }
+
    public:
     CommandBufferTree(): buffer_tree_(nullptr) {}
     CommandBufferTree(QTreeWidget* tree_widget, const FrameCapture& capture) : buffer_tree_(tree_widget), drawer_(capture) {
         QObject::connect(tree_widget, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
         QObject::connect(tree_widget, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
+        QObject::connect(tree_widget, &QTreeWidget::itemActivated, [this](QTreeWidgetItem* item) {OnActivated(item);});
     }
 
     // Adds the given command buffer to this view.

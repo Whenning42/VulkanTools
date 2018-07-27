@@ -19,16 +19,16 @@
 #define COMMAND_VIZ_H
 
 #include "command.h"
-#include "command_tree_widget_item.h"
-#include "string_helpers.h"
 #include "frame_capture.h"
+#include "string_helpers.h"
+#include "synchronization.h"
 
 #include <QColor>
 #include <functional>
 #include <sstream>
 #include <memory>
 
-class QTreeWidget;
+class CommandTreeWidgetItem;
 
 // Draw cases:
 // 	Current- Highlight all hazards
@@ -36,17 +36,8 @@ class QTreeWidget;
 // 	To Implement- Hightlight all resources touched by barrier
 // 	To Implement- Highlight this resource touched by barrier
 
-struct BarrierOccurance {
-    VkPipelineStageFlags src_mask;
-    VkPipelineStageFlags dst_mask;
-    const MemoryBarrier* barrier;
-    CommandRef location;
-
-    bool AccessComesBefore(const FrameCapture& capture, const AccessRef& access) const {
-        return capture.sync.CommandComesBeforeOther(CommandRef{access.buffer, access.command_index}, location);
-    }
-};
-
+// This is a slight misnoner. This class is in charge of not just setting up command buffer tree views, but also ensuring their
+// meta-data is setup right. This includes storing the command locations of certain command widgets in the widgets themselves.
 class CommandDrawer {
     // String map
     // Hazard map
@@ -83,12 +74,11 @@ class CommandDrawer {
     std::string HandleName(T* handle) const;
 
     template <typename T>
-    CommandTreeWidgetItem* AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
-                                       const std::string& barrier_type) const;
+    CommandTreeWidgetItem* AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers, VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask, const std::string& barrier_type, const CommandRef& barrier_location) const;
 
-    void AddBarrier(CommandTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const;
-    void AddBarrier(CommandTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const;
-    void AddBarrier(CommandTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const;
+    void AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const;
+    void AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const;
+    void AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const;
 
    public:
     CommandDrawer() {};
@@ -110,16 +100,14 @@ class CommandDrawer {
         focus_resource_ = resource;
     }
 
-    void ShowAllBarrierEffects(const MemoryBarrier* barrier, VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask,
-                               const CommandRef& location) {
+    void ShowAllBarrierEffects(const BarrierOccurance& barrier) {
         draw_state_ = DrawState::BARRIER_EFFECTS_ALL;
-        focus_barrier_ = BarrierOccurance{src_mask, dst_mask, barrier, location};
+        focus_barrier_ = barrier;
     }
-    void ShowBarrierEffectsForResource(const MemoryBarrier* barrier, VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask,
-                                       const CommandRef& location, void* resource) {
+    void ShowBarrierEffectsForResource(const BarrierOccurance& barrier, void* resource) {
         draw_state_ = DrawState::BARRIER_EFFECTS_FOR_RESOURCE;
         focus_resource_ = resource;
-        focus_barrier_ = BarrierOccurance{src_mask, dst_mask, barrier, location};
+        focus_barrier_ = barrier;
     }
 };
 

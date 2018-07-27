@@ -41,6 +41,13 @@ enum class HazardSrcOrDst {
     DST
 };
 
+struct BarrierOccurance {
+    VkPipelineStageFlags src_mask;
+    VkPipelineStageFlags dst_mask;
+    const MemoryBarrier* barrier;
+    CommandRef location;
+};
+
 // Represents whether an access comes before or after a barrier.
 enum class SubmitRelationToBarrier { BEFORE, AFTER };
 

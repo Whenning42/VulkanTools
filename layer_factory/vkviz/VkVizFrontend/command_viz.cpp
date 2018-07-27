@@ -3,6 +3,7 @@
 #include <QVariant>
 
 #include "color_tree_widget.h"
+#include "command_tree_widget_item.h"
 #include "command_viz.h"
 #include "string_helpers.h"
 
@@ -21,7 +22,7 @@ std::pair<bool, QColor> CommandDrawer::AccessColor(const MemoryAccess& access, c
             return {true, Colors::kHazardDestination};
     } else {
         SubmitRelationToBarrier submit_relation;
-        if (focus_barrier_.AccessComesBefore(*capture_, access_location)) {
+        if (capture_->sync.CommandComesBeforeOther(CommandRef{access_location.buffer, access_location.command_index}, focus_barrier_.location)) {
             submit_relation = SubmitRelationToBarrier::BEFORE;
         } else {
             submit_relation = SubmitRelationToBarrier::AFTER;
@@ -123,24 +124,23 @@ static void AddBitmask(CommandTreeWidgetItem* parent, MaskType mask, const std::
 }
 }  // namespace
 
-void CommandDrawer::AddBarrier(CommandTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const {
+void CommandDrawer::AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const {
     AddBitmask<VkAccessFlags, VkAccessFlagBits>(barrier_widget, barrier.src_access_mask, "Source Access Mask");
     AddBitmask<VkAccessFlags, VkAccessFlagBits>(barrier_widget, barrier.dst_access_mask, "Destination Access Mask");
 }
 
-void CommandDrawer::AddBarrier(CommandTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const {
-    AddBarrier(barrier_widget, static_cast<MemoryBarrier>(barrier));
+void CommandDrawer::AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const {
+    AddBarrierInfo(barrier_widget, static_cast<MemoryBarrier>(barrier));
     AddNewChildWidget(barrier_widget, capture_->ResourceName(barrier.buffer));
 }
 
-void CommandDrawer::AddBarrier(CommandTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const {
-    AddBarrier(barrier_widget, static_cast<MemoryBarrier>(barrier));
+void CommandDrawer::AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const ImageBarrier& barrier) const {
+    AddBarrierInfo(barrier_widget, static_cast<MemoryBarrier>(barrier));
     AddNewChildWidget(barrier_widget, capture_->ResourceName(barrier.image));
 }
 
 template <typename T>
-CommandTreeWidgetItem* CommandDrawer::AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
-                                                  const std::string& barrier_type) const {
+CommandTreeWidgetItem* CommandDrawer::AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers, VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask, const std::string& barrier_type, const CommandRef& barrier_location) const {
     if (barriers.size() > 0) {
         CommandTreeWidgetItem* barriers_parent = pipeline_barrier_widget;
 
@@ -150,8 +150,11 @@ CommandTreeWidgetItem* CommandDrawer::AddBarriers(CommandTreeWidgetItem* pipelin
         }
 
         for (uint32_t i = 0; i < barriers.size(); ++i) {
-            CommandTreeWidgetItem* barrier_widget = AddNewChildWidget(barriers_parent, barrier_type + " Barrier");
-            AddBarrier(barrier_widget, barriers[i]);
+            BarrierOccurance occurance = {src_mask, dst_mask, &barriers[i], barrier_location};
+            CommandTreeWidgetItem* barrier_widget = CommandTreeWidgetItem::NewBarrier(barrier_type + " Barrier", occurance);
+            barriers_parent->addChild(barrier_widget);
+
+            AddBarrierInfo(barrier_widget, barriers[i]);
         }
     }
 }
@@ -164,9 +167,10 @@ CommandTreeWidgetItem* CommandDrawer::ToWidget(const PipelineBarrierCommand& bar
                                                               "Source Stage Mask");
     AddBitmask<VkPipelineStageFlags, VkPipelineStageFlagBits>(pipeline_barrier_widget, barrier_command.barrier.dst_stage_mask,
                                                               "Destination Stage Mask");
-    AddBarriers(pipeline_barrier_widget, barrier_command.barrier.global_barriers, "Global");
-    AddBarriers(pipeline_barrier_widget, barrier_command.barrier.buffer_barriers, "Buffer");
-    AddBarriers(pipeline_barrier_widget, barrier_command.barrier.image_barriers, "Image");
+
+    AddBarriers(pipeline_barrier_widget, barrier_command.barrier.global_barriers, barrier_command.barrier.src_stage_mask, barrier_command.barrier.dst_stage_mask, "Global", command_location);
+    AddBarriers(pipeline_barrier_widget, barrier_command.barrier.buffer_barriers, barrier_command.barrier.src_stage_mask, barrier_command.barrier.dst_stage_mask, "Buffer", command_location);
+    AddBarriers(pipeline_barrier_widget, barrier_command.barrier.image_barriers, barrier_command.barrier.src_stage_mask, barrier_command.barrier.dst_stage_mask, "Image", command_location);
 
     return pipeline_barrier_widget;
 }
