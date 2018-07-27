@@ -5,6 +5,7 @@
 #include "memory_access.h"
 #include "memory_barrier.h"
 #include "serialize.h"
+#include "util.h"
 
 #include <stdint.h>
 #include <unordered_map>
@@ -112,7 +113,8 @@ inline VkPipelineStageFlags EarliestStage(VkPipelineStageFlags stage_flags) {
     assert(stage_flags != 0);
     VkPipelineStageFlags earliest_stage = 0;
     for (int bit = 0; bit < 32; ++bit) {
-        if (bit & stage_flags) return 1 << bit;
+        uint32_t flag = 1 << bit;
+        if (flag & stage_flags) return flag;
     }
 }
 
@@ -121,7 +123,8 @@ inline VkPipelineStageFlags LatestStage(VkPipelineStageFlags stage_flags) {
     assert(stage_flags != 0);
     VkPipelineStageFlags earliest_stage = 0;
     for (int bit = 31; bit >= 0; --bit) {
-        if (bit & stage_flags) return 1 << bit;
+        uint32_t flag = 1 << bit;
+        if (flag & stage_flags) return flag;
     }
 }
 
@@ -132,8 +135,9 @@ inline bool SyncGuaranteesOrdering(VkPipelineStageFlags access_bit, VkPipelineSt
     // These early returns are for when access_bit or sync_flags aren't in the given scope, i.e. access_bit is a graphics pipeline
     // stage and sync_flags are graphics pipeline stages and we're using the compute stages mask.
     VkPipelineStageFlags scoped_sync_flags = sync_flags & implicit_scope_mask;
-    if (access_bit & implicit_scope_mask == 0) return false;
     if (scoped_sync_flags == 0) return false;
+
+    if (access_bit & implicit_scope_mask == 0) return false;
 
     if (ordering == SyncOrdering::BEFORE) {
         return access_bit <= LatestStage(scoped_sync_flags);
@@ -290,11 +294,7 @@ class SyncTracker {
     }
 
     bool AccessIsHazardForResource(const AccessRef& access_location, void* resource) const {
-        if(hazards.find(access_location) != hazards.end()) {
-            return false;
-        } else {
-            return hazards.at(access_location).resource == reinterpret_cast<std::uintptr_t>(resource);
-        }
+        return FindOrDefault(hazards, access_location, {}).resource == reinterpret_cast<std::uintptr_t>(resource);
     }
 
     // Checks if the given access has any hazard.
@@ -343,6 +343,6 @@ class SyncTracker {
         return AccessRelationToBarrier(access, barrier, src_stage_mask, dst_stage_mask, submit_relation);
     }
 };
-SERIALIZE4(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards);
+SERIALIZE5(SyncTracker, resource_references, resource_types, hazards, resources_with_hazards, command_buffer_submit_order);
 
 #endif  // SYNCHRONIZATION_H

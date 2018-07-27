@@ -19,11 +19,14 @@
 #define COMMAND_VIZ_H
 
 #include "command.h"
+#include "command_tree_widget_item.h"
 #include "frame_capture.h"
 #include "string_helpers.h"
 #include "synchronization.h"
+#include "util.h"
 
 #include <QColor>
+#include <QTreeWidgetItem>
 #include <functional>
 #include <sstream>
 #include <memory>
@@ -36,8 +39,19 @@ class CommandTreeWidgetItem;
 // 	To Implement- Hightlight all resources touched by barrier
 // 	To Implement- Highlight this resource touched by barrier
 
+enum class DrawMode { HAZARDS, BARRIER_EFFECTS /*, BARRIERS_AFFECTED_BY*/ };
+enum class FocusMode { ALL, RESOURCE };
+
+// inline void SafeTreeClear(QTreeWidget* tree) {
+//    QTreeWidgetItem* to_delete;
+//    while(to_delete = tree->takeTopLevelItem(0)) {
+//        delete to_delete;
+//        //to_delete->deleteLater();
+//    }
+//}
+
 // This is a slight misnoner. This class is in charge of not just setting up command buffer tree views, but also ensuring their
-// meta-data is setup right. This includes storing the command locations of certain command widgets in the widgets themselves.
+// meta-data is set up right. This includes storing the command locations of certain command widgets in the widgets themselves.
 class CommandDrawer {
     // String map
     // Hazard map
@@ -48,11 +62,55 @@ class CommandDrawer {
 
     const FrameCapture* capture_;
 
-    void* focus_resource_;
+   public:
+    QTreeWidget* tree_;
+
+   private:
+    void* focus_resource_ = nullptr;
     BarrierOccurance focus_barrier_;
 
-    enum class DrawState { HAZARDS_ALL, HAZARDS_FOR_RESOURCE, BARRIER_EFFECTS_ALL, BARRIER_EFFECTS_FOR_RESOURCE };
-    DrawState draw_state_ = DrawState::HAZARDS_ALL;
+    DrawMode draw_mode_ = DrawMode::HAZARDS;
+    FocusMode focus_mode_ = FocusMode::ALL;
+
+    void Clear();
+    void Redraw() {
+        tree_->clear();
+        if (focus_mode_ == FocusMode::ALL) {
+            for (const auto& buffer : capture_->command_buffers) {
+                tree_->addTopLevelItem(CommandTreeWidgetItem::ToQItem(ToWidget(buffer)));
+            }
+        } else {
+            const auto& buffers_commands_for_resource =
+                FindOrDefault(capture_->sync.resource_references, reinterpret_cast<std::uintptr_t>(focus_resource_), {});
+            for (const auto& buffer : capture_->command_buffers) {
+                const auto& commands_to_show = FindOrDefault(buffers_commands_for_resource, buffer.Handle(), {});
+                tree_->addTopLevelItem(CommandTreeWidgetItem::ToQItem(RelevantCommandsToWidget(buffer, commands_to_show)));
+            }
+        }
+    };
+    void SetDrawMode(DrawMode new_mode) {
+        if (draw_mode_ != new_mode) {
+            draw_mode_ = new_mode;
+            Redraw();
+        }
+    }
+    void SetFocusMode(FocusMode new_mode) {
+        if (focus_mode_ != new_mode) {
+            focus_mode_ = new_mode;
+            Redraw();
+        }
+    }
+    void SetFocusResource(void* resource) {
+        if (focus_resource_ = resource) {
+            focus_resource_ = resource;
+            Redraw();
+        }
+    }
+    void SetFocusBarrier(const BarrierOccurance& barrier) {
+        // BarrierOccurance doesn't have an equality operator yet.
+        focus_barrier_ = barrier;
+        Redraw();
+    }
 
     // Returns which color to set this access to.
     std::pair<bool, QColor> AccessColor(const MemoryAccess& access, const AccessRef& access_location) const;
@@ -74,7 +132,8 @@ class CommandDrawer {
     std::string HandleName(T* handle) const;
 
     template <typename T>
-    CommandTreeWidgetItem* AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers, VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask, const std::string& barrier_type, const CommandRef& barrier_location) const;
+    void AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers, VkPipelineStageFlags src_mask,
+                     VkPipelineStageFlags dst_mask, const std::string& barrier_type, const CommandRef& barrier_location) const;
 
     void AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const MemoryBarrier& barrier) const;
     void AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const BufferBarrier& barrier) const;
@@ -82,7 +141,10 @@ class CommandDrawer {
 
    public:
     CommandDrawer() {};
-    CommandDrawer(const FrameCapture& capture) : capture_(&capture){};
+    CommandDrawer(const FrameCapture& capture, QTreeWidget* tree, FocusMode focus_mode)
+        : capture_(&capture), tree_(tree), focus_mode_(focus_mode) {
+        Redraw();
+    };
 
     CommandTreeWidgetItem* ToWidget(const BasicCommand& command, const CommandRef& command_location) const;
     CommandTreeWidgetItem* ToWidget(const Access& access, const CommandRef& command_location) const;
@@ -93,21 +155,16 @@ class CommandDrawer {
     CommandTreeWidgetItem* RelevantCommandsToWidget(const VkVizCommandBuffer& command_buffer,
                                                     const std::unordered_set<uint32_t>& relevant_commands) const;
 
-    // Draw mode functions
-    void ShowAllHazards() { draw_state_ = DrawState::HAZARDS_ALL; }
-    void ShowHazardsForResource(void* resource) {
-        draw_state_ = DrawState::HAZARDS_FOR_RESOURCE;
-        focus_resource_ = resource;
+    void ShowHazards() { SetDrawMode(DrawMode::HAZARDS); }
+    void ShowBarrierEffects(const BarrierOccurance& barrier) {
+        SetFocusBarrier(barrier);
+        SetDrawMode(DrawMode::BARRIER_EFFECTS);
     }
 
-    void ShowAllBarrierEffects(const BarrierOccurance& barrier) {
-        draw_state_ = DrawState::BARRIER_EFFECTS_ALL;
-        focus_barrier_ = barrier;
-    }
-    void ShowBarrierEffectsForResource(const BarrierOccurance& barrier, void* resource) {
-        draw_state_ = DrawState::BARRIER_EFFECTS_FOR_RESOURCE;
-        focus_resource_ = resource;
-        focus_barrier_ = barrier;
+    void FocusAll() { SetFocusMode(FocusMode::ALL); }
+    void FocusResource(void* resource) {
+        SetFocusResource(resource);
+        SetFocusMode(FocusMode::RESOURCE);
     }
 };
 

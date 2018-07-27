@@ -30,57 +30,37 @@
 #include <QCommonStyle>
 #include <QStackedLayout>
 
-void MainWindow::ShowSubmittedCommandBufferView() {
-    ui->tabWidget->setCurrentIndex(0);
-}
-
-void MainWindow::PopulateSubmittedCommandBufferView() {
-    submitted_command_buffer_view_.Clear();
-    submitted_command_buffer_view_.AddCommandBuffers(capture_.command_buffers);
-}
-
-void MainWindow::ShowResourceView() {
-    ui->tabWidget->setCurrentIndex(1);
-}
-
-void MainWindow::PopulateResourceView(void* resource) {
-    std::uintptr_t resource_val = reinterpret_cast<uintptr_t>(resource);
-    printf("Populating dropdown: %p\n", resource);
-
-    resource_view_.Clear();
-    std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>> buffer_filters = capture_.sync.resource_references[resource_val];
-    resource_view_.AddFilteredCommandBuffers(capture_.command_buffers, buffer_filters);
-}
-
 void MainWindow::OnDropdownSelect(int index) {
+    void* resource;
     if(index == 0) {
-        resource_view_.Clear();
-        return;
+        resource = nullptr;
+    } else {
+        resource = frame_resources_[index - 1];
     }
 
-    void* resource = frame_resources_[index-1];
-    PopulateResourceView(resource);
+    resource_view_.SetResource(resource);
 }
 
 void MainWindow::SetupResourceDropdown() {
     const auto& resource_references = capture_.sync.resource_references;
 
     // Add buffers then images to have resources sorted by type.
-    for(MEMORY_TYPE to_add_type : {BUFFER_MEMORY, IMAGE_MEMORY}) {
+    for (MEMORY_TYPE current_type_to_add : {BUFFER_MEMORY, IMAGE_MEMORY}) {
         for(const auto& key_value : resource_references) {
             void* resource = reinterpret_cast<void*>(key_value.first);
             std::uintptr_t resource_val = key_value.first;
 
             MEMORY_TYPE type = capture_.sync.resource_types[resource_val];
-            if(type != to_add_type) continue;
+            if (type != current_type_to_add) continue;
 
             frame_resources_.push_back(resource);
 
             QString dropdown_text;
             if(type == BUFFER_MEMORY) {
-                dropdown_text = QString::fromStdString(capture_.ResourceName(reinterpret_cast<VkBuffer>(resource)));
+                // ResourceName() needs a typed handle.
+                dropdown_text = QString::fromStdString(capture_.ResourceName(static_cast<VkBuffer>(resource)));
             } else {
-                dropdown_text = QString::fromStdString(capture_.ResourceName(reinterpret_cast<VkImage>(resource)));
+                dropdown_text = QString::fromStdString(capture_.ResourceName(static_cast<VkImage>(resource)));
             }
 
             if(capture_.sync.ResourceHasHazard(resource)) {
@@ -104,13 +84,15 @@ MainWindow::MainWindow(QWidget* parent)
     // Set the splits to be the same size
     ui->Splitter->setSizes({INT_MAX, INT_MAX});
 
-    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree, capture_);
-    resource_view_ = CommandBufferTree(ui->ResourceTree, capture_);
-
-    PopulateSubmittedCommandBufferView();
-    ShowSubmittedCommandBufferView();
-
     SetupResourceDropdown();
+    submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree, capture_, FocusMode::ALL);
+    submitted_command_buffer_view_.SetupCallbacks();
+    resource_view_ = CommandBufferTree(ui->ResourceTree, capture_, FocusMode::RESOURCE);
+    resource_view_.SetupCallbacks();
+
+    // Sets the command buffer view as visible tab.
+    ui->tabWidget->setCurrentIndex(1);
+
     connect(ui->ResourcePicker, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) { this->OnDropdownSelect(index); });
 }
 

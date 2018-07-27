@@ -19,6 +19,7 @@
 #include "command_tree_widget_item.h"
 #include "command_viz.h"
 
+/*
 void CommandBufferTree::AddCommandBuffer(const VkVizCommandBuffer& command_buffer) {
     AddTopLevelItem(buffer_tree_, drawer_.ToWidget(command_buffer));
 }
@@ -29,19 +30,19 @@ void CommandBufferTree::AddCommandBuffers(const std::vector<VkVizCommandBuffer>&
     }
 }
 
-void CommandBufferTree::AddFilteredCommandBuffer(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>& relevant_commands) {
-    CommandTreeWidgetItem* buffer_widget = drawer_.RelevantCommandsToWidget(command_buffer, relevant_commands);
+void CommandBufferTree::AddFilteredCommandBuffer(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>&
+relevant_commands) { CommandTreeWidgetItem* buffer_widget = drawer_.RelevantCommandsToWidget(command_buffer, relevant_commands);
     if(buffer_widget) {
         AddTopLevelItem(buffer_tree_, buffer_widget);
     }
 }
 
-void CommandBufferTree::AddFilteredCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>& buffer_filters) {
-    for(const auto& buffer : command_buffers) {
+void CommandBufferTree::AddFilteredCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers,
+std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>& buffer_filters) { for(const auto& buffer : command_buffers) {
         if(buffer_filters.find(buffer.Handle()) != buffer_filters.end()) {
             AddFilteredCommandBuffer(buffer, buffer_filters.at(buffer.Handle()));
         } else {
             AddFilteredCommandBuffer(buffer, {});
         }
     }
-}
+}*/

@@ -8,9 +8,9 @@
 #include "string_helpers.h"
 
 std::pair<bool, QColor> CommandDrawer::AccessColor(const MemoryAccess& access, const AccessRef& access_location) const {
-    if (draw_state_ == DrawState::HAZARDS_ALL || draw_state_ == DrawState::HAZARDS_FOR_RESOURCE) {
+    if (draw_mode_ == DrawMode::HAZARDS) {
         HazardSrcOrDst hazard_type;
-        if (draw_state_ == DrawState::HAZARDS_ALL) {
+        if (focus_mode_ == FocusMode::ALL) {
             hazard_type = capture_->sync.HazardIsSrcOrDst(access_location);
         } else {
             hazard_type = capture_->sync.HazardIsSrcOrDstForResource(access_location, focus_resource_);
@@ -29,7 +29,7 @@ std::pair<bool, QColor> CommandDrawer::AccessColor(const MemoryAccess& access, c
         }
 
         SyncRelationToBarrier sync_relation;
-        if (draw_state_ == DrawState::BARRIER_EFFECTS_ALL) {
+        if (focus_mode_ == FocusMode::ALL) {
             sync_relation = capture_->sync.AccessRelationToBarrier(access, focus_barrier_.barrier, focus_barrier_.src_mask,
                                                                    focus_barrier_.dst_mask, submit_relation);
         } else {
@@ -140,7 +140,9 @@ void CommandDrawer::AddBarrierInfo(CommandTreeWidgetItem* barrier_widget, const 
 }
 
 template <typename T>
-CommandTreeWidgetItem* CommandDrawer::AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers, VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask, const std::string& barrier_type, const CommandRef& barrier_location) const {
+void CommandDrawer::AddBarriers(CommandTreeWidgetItem* pipeline_barrier_widget, const std::vector<T>& barriers,
+                                VkPipelineStageFlags src_mask, VkPipelineStageFlags dst_mask, const std::string& barrier_type,
+                                const CommandRef& barrier_location) const {
     if (barriers.size() > 0) {
         CommandTreeWidgetItem* barriers_parent = pipeline_barrier_widget;
 
@@ -175,31 +177,27 @@ CommandTreeWidgetItem* CommandDrawer::ToWidget(const PipelineBarrierCommand& bar
     return pipeline_barrier_widget;
 }
 
+// Returns nullptr if the filter filters out all commands in the buffer.
 CommandTreeWidgetItem* CommandDrawer::FilteredToWidget(
     const VkVizCommandBuffer& command_buffer,
     const std::function<bool(uint32_t command_index, const CommandWrapper& command)>& filter) const {
-    CommandTreeWidgetItem* command_buffer_widget =
-        CommandTreeWidgetItem::NewWidget(capture_->ResourceName(command_buffer.Handle()));
+    CommandTreeWidgetItem* command_buffer_widget = nullptr;
 
-    uint32_t added_commands = 0;
     CommandRef command_location = {command_buffer.Handle(), 0};
     for (; command_location.command_index < command_buffer.Commands().size(); ++command_location.command_index) {
         const auto& command = command_buffer.Commands()[command_location.command_index];
 
         if (filter(command_location.command_index, command)) {
-            ++added_commands;
+            if (!command_buffer_widget) {
+                command_buffer_widget = CommandTreeWidgetItem::NewWidget(capture_->ResourceName(command_buffer.Handle()));
+            }
 
             CommandWrapperViz command_viz(command);
             command_buffer_widget->addChild(command_viz.ToWidget(*this, command_location));
         }
     }
 
-    if (added_commands > 0) {
-        return command_buffer_widget;
-    } else {
-        delete command_buffer_widget;
-        return nullptr;
-    }
+    return command_buffer_widget;
 }
 
 CommandTreeWidgetItem* CommandDrawer::ToWidget(const VkVizCommandBuffer& command_buffer) const {

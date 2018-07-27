@@ -22,6 +22,7 @@
 #include <QLabel>
 #include <QTreeWidget>
 #include <QVariant>
+#include <QObject>
 #include <unordered_set>
 
 #include "color_tree_widget.h"
@@ -31,14 +32,7 @@
 #include "synchronization.h"
 
 class CommandBufferTree {
-    QTreeWidget* buffer_tree_;
     CommandDrawer drawer_;
-
-    // Checks whether this view has any Command Buffers in it.
-    bool IsEmpty() { return buffer_tree_->columnCount() == 0; }
-
-    // Adds a new command to the bottom of the last added command buffer.
-    void AddCommand(const CommandWrapper& command);
 
     void OnExpand(QTreeWidgetItem* item) {
         CommandTreeWidgetItem* tree_item = CommandTreeWidgetItem::FromQItem(item);
@@ -53,31 +47,32 @@ class CommandBufferTree {
     void OnActivated(QTreeWidgetItem* item) {
         CommandTreeWidgetItem* tree_item = CommandTreeWidgetItem::FromQItem(item);
         if(tree_item->HasBarrierOccurance()) {
-            //drawer_.ShowAllBarrierEffects(tree_item->GetBarrierOccurance());
-            drawer_.ShowAllHazards();
+            drawer_.ShowBarrierEffects(tree_item->GetBarrierOccurance());
         }
     }
 
    public:
-    CommandBufferTree(): buffer_tree_(nullptr) {}
-    CommandBufferTree(QTreeWidget* tree_widget, const FrameCapture& capture) : buffer_tree_(tree_widget), drawer_(capture) {
-        QObject::connect(tree_widget, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) {OnCollapse(item);});
-        QObject::connect(tree_widget, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) {OnExpand(item);});
-        QObject::connect(tree_widget, &QTreeWidget::itemActivated, [this](QTreeWidgetItem* item) {OnActivated(item);});
+    CommandBufferTree() {}
+    CommandBufferTree(QTreeWidget* tree_widget, const FrameCapture& capture, FocusMode focus_mode)
+        : drawer_(capture, tree_widget, focus_mode) {}
+
+    static CommandBufferTree Create(QTreeWidget* tree_widget, const FrameCapture& capture, FocusMode focus_mode) {
+        CommandBufferTree out(tree_widget, capture, focus_mode);
+        out.SetupCallbacks();
+        return out;
     }
 
-    // Adds the given command buffer to this view.
-    void AddCommandBuffer(const VkVizCommandBuffer& command_buffer);
+    void SetupCallbacks() {
+        QObject::connect(drawer_.tree_, &QTreeWidget::itemCollapsed, [this](QTreeWidgetItem* item) { OnCollapse(item); });
+        QObject::connect(drawer_.tree_, &QTreeWidget::itemExpanded, [this](QTreeWidgetItem* item) { OnExpand(item); });
+        QObject::connect(drawer_.tree_, &QTreeWidget::itemActivated, [this](QTreeWidgetItem* item) { OnActivated(item); });
+    }
 
-    void AddCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers);
+    CommandBufferTree& operator=(const CommandBufferTree& other) = delete;
+    CommandBufferTree& operator=(CommandBufferTree&& other) = default;
+    CommandBufferTree(CommandBufferTree&& other) = default;
 
-    // Adds the given command buffer to this view.
-    void AddFilteredCommandBuffer(const VkVizCommandBuffer& command_buffer, const std::unordered_set<uint32_t>& relevant_commands);
-
-    void AddFilteredCommandBuffers(const std::vector<VkVizCommandBuffer>& command_buffers, std::unordered_map<VkCommandBuffer, std::unordered_set<uint32_t>>& resource_buffer_filters);
-
-    // Clears all the command buffers from this view.
-    void Clear() { buffer_tree_->clear(); }
+    void SetResource(void* resource) { drawer_.FocusResource(resource); }
 };
 
 #endif  // COMMAND_BUFFER_TREE_H
