@@ -82,7 +82,8 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
 
     // Set the splits to be the same size
-    ui->Splitter->setSizes({INT_MAX, INT_MAX});
+//    ui->Splitter->setSizes({INT_MAX, INT_MAX});
+    ui->Splitter->setSizes({INT_MAX, 0});
 
     SetupResourceDropdown();
     submitted_command_buffer_view_ = CommandBufferTree(ui->CmdBufferTree, capture_, FocusMode::ALL);
