@@ -1,6 +1,6 @@
 [submodule "submodules/Vulkan-LoaderAndValidationLayers"]
 	path = submodules/Vulkan-LoaderAndValidationLayers
-	url = https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers.git
+	url = https://github.com/Whenning42/Vulkan-LoaderAndValidationLayers.git
 [submodule "submodules/jsoncpp"]
 	path = submodules/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
