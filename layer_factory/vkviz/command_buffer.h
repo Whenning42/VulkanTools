@@ -126,8 +126,7 @@ class VkVizCommandBuffer {
     std::vector<VkVizDescriptorSet> compute_descriptor_sets_;
 
     VkCommandBufferLevel level_;
-
-    // std::vector<VkVizRenderPassInstance> render_pass_instances_;
+    bool in_render_pass_instance_ = false;
 
     // Looks like spirv can't give which descriptor set binding indices shaders use. Therefore, we only track which sets and
     // bindings are used, and mark every buffer or image in the given set and binding as being used.

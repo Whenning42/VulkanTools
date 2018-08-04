@@ -58,6 +58,19 @@ using json = nlohmann::json;
         obj.var4 = j[#var4].get<decltype(obj.var4)>();                                    \
     }
 
+#define SERIALIZE6(class, var1, var2, var3, var4, var5, var6)                                                                   \
+    inline void to_json(json& j, const class& obj) {                                                                            \
+        j = {{#var1, obj.var1}, {#var2, obj.var2}, {#var3, obj.var3}, {#var4, obj.var4}, {#var5, obj.var5}, {#var6, obj.var6}}; \
+    }                                                                                                                           \
+    inline void from_json(const json& j, class& obj) {                                                                          \
+        obj.var1 = j[#var1].get<decltype(obj.var1)>();                                                                          \
+        obj.var2 = j[#var2].get<decltype(obj.var2)>();                                                                          \
+        obj.var3 = j[#var3].get<decltype(obj.var3)>();                                                                          \
+        obj.var4 = j[#var4].get<decltype(obj.var4)>();                                                                          \
+        obj.var5 = j[#var5].get<decltype(obj.var5)>();                                                                          \
+        obj.var6 = j[#var6].get<decltype(obj.var6)>();                                                                          \
+    }
+
 // Helper macros to create serialization functions for children classes inheriting from a base class.
 #define C_SERIALIZE(base_class, derived_class, var)             \
     void to_json(json& j) const override { j = {{#var, var}}; } \
